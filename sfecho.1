@@ -1,0 +1,149 @@
+.TH "SFECHO" 1 "28 AUG 2002"
+.UC 4
+.SH NAME
+sfecho \- Speak Freely remote echo server
+.SH SYNOPSIS
+.nh
+.na
+.B sfecho
+[
+.B  \-du
+]
+[
+.BI \-p port
+]
+'in +5n
+[
+.BI \-v timeout
+]
+[
+.BI \-z drop% , shuffle% , depth
+]
+.in -5n
+.hy
+.ad
+.SH DESCRIPTION
+.B sfecho
+is a server program which receives sound from remote hosts in
+the same manner as
+.BR sfspeaker ,
+but instead of playing sound on the workstation's audio
+output, buffers it in memory for ten seconds and then
+retransmits it to the sending host.  This allows remote users,
+even those with half-duplex audio hardware, to experiment with
+different compression and encryption modes to optimise
+end-to-end performance without tying up a person on the
+other end of the connection.
+.PP
+.B sfecho
+can echo sound in RTP and VAT protocols as well as Speak
+Freely's native protocol.  To permit this, messages on both the specified
+port and the next higher numbered port are monitored, queued, and
+retransmitted.
+.PP
+An echo server can invite connections by publishing its existence
+on one or more directory servers.  See the ``Look Who's Listening''
+section in the
+.B sfspeaker
+manual page for details on how to set the environment variables.
+.SH OPTIONS
+.TP
+.B \-d
+Enables debug output from
+.BR sfecho .
+.TP
+.BI \-p port
+Causes
+.B sfecho
+to listen on the specified port number instead of the default
+port specified by ``INTERNET_PORT'' in the
+.BR Makefile .
+To comply with the RTP standard, the port specified should have
+an even number; the next higher numbered port is used for RTCP
+control messages.
+.TP
+.B \-u
+Prints how-to-call information.
+.TP
+.BI \-v timeout
+When
+.B sfecho
+receives a packet from a host it hasn't heard from in
+.I timeout
+seconds, it will attempt to find the host name and print a
+message on standard error noting the new connection and what
+compression mode is being used.  If the
+host name can't be found, the numeric IP address is given.
+After
+.I timeout
+seconds of inactivity a message is issued indicating the host is idle.
+If no
+.I timeout
+is specified, 180 seconds is used.
+.TP
+.BI \-z drop% , shuffle% , depth
+.B sfecho
+will simulate an imperfect Internet connection by randomly dropping
+(discarding)
+.I drop%
+percent of the packets it receives, then shuffling in order
+.I shuffle%
+percent of the remaining packets with a maximum reordering
+of
+.I depth
+packets.  This option should never be used on a production
+echo server; it is intended to simulate bad connections to
+permit testing various error-tolerant algorithms to cope
+with them.
+.SH BUGS
+If
+.B sfecho
+runs out of memory to buffer sound awaiting retransmission,
+packets are discarded without warning.
+.PP
+By default,
+.B sfecho
+listens on Internet port number 2074, the same as
+.BR sfspeaker ,
+and hence cannot run at the same time on the same machine as
+.BR sfspeaker .
+You can specify a different port for
+.B sfecho
+with the
+.B \-p
+option, but many users have difficulty connecting to servers with
+nonstandard port numbers, so this isn't a terribly good idea for
+public servers.
+If your server is intended primarily to echo messages in RTP
+protocol, you may want to specify port 5004, the default port
+for RTP specified in RFC 1890.	Many VAT compatible applications
+default to port 3456.
+.SH ACKNOWLEDGEMENTS
+The implementation of MD5 message-digest algorithm
+is based on a public domain version written by Colin Plumb in 1993.
+The algorithm is due to Ron Rivest.  The algorithm is described
+in Internet RFC 1321.
+.SH "SEE ALSO"
+.PD
+.BR sfspeaker (1)
+.ne 4
+.SH AUTHOR
+.RS 5
+.nf
+John Walker
+WWW:	http://www.fourmilab.ch/
+.fi
+.RE
+.PP
+All modules of
+.B "Speak Freely"
+developed by me are in the public domain.
+See the
+.B readme
+and/or
+.B copyright
+files in the
+.B idea
+directory for conditions of use and distribution of that
+component.  This software is provided ``as is'' without express or
+implied warranty.

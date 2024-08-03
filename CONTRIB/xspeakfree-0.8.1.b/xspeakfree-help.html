@@ -1,0 +1,258 @@
+
+
+
+
+
+
+
+
+
+
+
+<HTML><HEAD><TITLE>spearce.org | projects | xspeakfree</TITLE></HEAD>
+<BODY BGCOLOR="#FFFFFF">
+
+<CENTER>
+<I><B>spearce.org | projects | xspeakfree</B></I><HR WIDTH="75%">
+</CENTER>
+<TABLE BORDER="0" WIDTH="100%" CELLPADDING="0" CELLSPACING="0">
+<TR><TD HEIGHT="400" WIDTH="120" BGCOLOR="#d2b48c" VALIGN="TOP">
+<!-- Menu -->
+<A HREF="../../index.html">spearce.org</A><P>
+<A HREF="../../bookmarks.html">Bookmarks</A><P>
+<A HREF="../../personal/index.html">Personal</A><P>
+<A HREF="../../projects/index.html">Projects</A><P>
+<A HREF="mailto:spearce@spearce.org">Contact spearce</A><P>
+</TD>
+<TD><TD ROWS="2" WIDTH="10">&nbsp;</TD>
+<TD ROWS="2" VALIGN="TOP" BGCOLOR="#FFFFFF">
+<!-- Content -->
+
+<B>xspeakfree is a Tcl/Tk (wish) frontend to Speak Freely</B>.<P>
+
+For more information about Speak Freely see:
+	<LI><A HREF="http://www.fourmilab.ch/">http://www.fourmilab.ch/</A><BR><p>
+
+For more information about Tcl/Tk see:
+	<LI><A HREF="http://www.scriptics.com/">http://www.scriptics.com/</A><BR><P>
+
+I am not the author of either of these packages.<P>
+
+I recommend version 8.0 of both Tcl and Tk, however there is little
+reason an older version shouldn't work.<P>
+
+<B>Requirements:</B><P>
+<PRE>
+	wish (Tcl/Tk), suggested version 8.0p2
+	sfspeaker and sfmike, suggestion version 6.1c
+	mkfifo (your kernel must support fifos)
+	/tmp must be writable by the user using xspeakfree
+</PRE>
+
+<B>Downloading:</B><P>
+	<LI><A HREF="xspeakfree-0.8.2.tar.gz">xspeakfree-0.8.2.tar.gz</A><BR>
+	<LI><A HREF="xspeakfree-0.8.1.tar.gz">xspeakfree-0.8.1.tar.gz</A><BR>
+	<LI><A HREF="xspeakfree-0.7.tar.gz">xspeakfree-0.7.tar.gz</A><BR>
+
+	xspeakfree is also available as a NetBSD package, thanks to
+	the efforts of <a href="mailto:lamj@stat.cmu.edu">
+	Johnny C. Lam" &lt;lamj@stat.cmu.edu&gt;.</a>.
+	For more information on the package, see:
+		<a href="ftp://ftp.netbsd.org/pub/NetBSD/packages/pkgsrc/net/xspeakfree/README.html">
+		ftp://ftp.netbsd.org/pub/NetBSD/packages/pkgsrc/net/xspeakfree/README.html
+		</a>
+	<P>
+
+<B>Using xspeakfree:</B><P>
+
+	There is no online help as its very simple and similiar to 
+	the Windows version of Speak Freely.  If you have a problem
+	using the program, email me and I will try to be of assitance.
+	<P>
+
+	xspeakfree executes a file on startup, its called
+	".xspeakfree.rc" in your HOME directory.  This file is NOT a
+	shell script, its a Tcl script source'd in though the Tcl
+	interpreter.
+	<P>
+	
+	To connect to a remote host and send audio, either go to
+	connection and select "New" and type in the host name, or
+	click on their name in the Target Host list with Button-3
+	(right mouse button) and select "Connect to host".
+	This will cause any current sfmike to exit and a new one to
+	start with the current settings sending audio to the newly
+	selected host.  Clicking on an already selected host name is
+	a nop.
+	<P>
+	
+	As hosts connect to your sfspeaker, they will be added to the
+	host list automatically.  As hosts disconnect, they will not be
+	removed from the list.  This is a change from its previous
+	behavior of removing a host from the list after a disconnect.
+	<P>
+
+	Check out the Options menu.  It should be self explanatory.
+	If its not, let me know.
+<P>
+	
+<B>OS Features:</B><P>
+
+	If you are on an SGI, you will note there is an "Irix" menu on
+	the menubar.  Any other OS this should be omitted.<P>
+
+	The only special support for Irix right now is launching the
+	Audio Panel directly from xspeakfree.  I'd like to add more
+	support than that, especially for ther OS's.<P>
+
+	If people can send me what options they want for what OS, as
+	well as the output of just "uname" for their OS - or some
+	other method of dertermining from a shell the OS type, as well
+	as how to do the options (ie I have NO CLUE how to control
+	volume on a Sparc Station so you have to tell me) I'll 
+	try to add in the support for that OS.<P>
+
+<B>.xspeakfree.rc file:</B><P>
+
+	This file is executed right before the window appears, after
+	all defaults have been programmed.  This way you can override
+	any default settings, configure your audio hardware, etc.<P>
+
+	In order to execute a shell command, simply prefix the line
+	with a "exec", ie on my SGI my .xspeakfree.rc file has this line
+	in it to configure my input port for the microphone:<P>
+
+	exec apanel -nodisplay -nofork -defaultout AnalogOut2 -device
+	AnalogOut2 -gain 7.5 -rate 8000 -unmute<P>
+
+	This has the effect of running the program apanel with that
+	mess of arguments.  =)<P>
+
+	I'm not going to help you with Tcl, go look on the web, there
+	are plenty of online manpages there.  But here's a list of the
+	variables you can modify and what effect they will have:<P>
+	
+	All defaults for these variables are the normal Speak Freely
+	software defaults.  =)<P>
+
+	<TABLE border="1">
+	<TR><TD>Speaker(port)</TD><TD>default port for sfspeaker to listen on</TD></TR>
+
+	<TR><TD>Speaker(args:jitter)</TD><TD>jitter setting, must be the full
+		commandline value, ie "-J2000" for 2 seconds.</TD></TR>
+
+	<TR><TD>Speaker(args:disable_remote_ring)</TD><TD>set to "-n" to disable
+		remote ring, " " to turn this feature off.</TD></TR>
+
+	<TR><TD>Speaker(:record:onoff)</TD><TD>set to 1 to record audio,
+		0 to not.  default is 0.</TD></TR>
+	
+	<TR><TD>Speaker(:record:file)</TD><TD>set to the file path to store
+		recorded audio in.  ignored unless Speaker(:record:onoff)
+		is set to 1.</TD></TR>
+
+	<TR><TD>Speaker(:record:append)</TD><TD>set to "+" to append to record files
+		instead of overwriting.  set to "" to overwrite.</TD></TR>
+
+	<TR><TD>Speaker(args:user)</TD><TD>additonal arguments for sfspeaker</TD></TR>
+
+	<TR><TD>Speaker(:crypt:method)</TD><TD>set to " " to use none,
+		"-O" for file, "-I" for IDEA, "-K" for DES
+		and "-Z" for PGP pass phrase.</TD></TR>
+
+	<TR><TD>Speaker(:crypt:-I)</TD><TD>IDEA string</TD></TR>
+	<TR><TD>Speaker(:crypt:-K)</TD><TD>DES string</TD></TR>
+	<TR><TD>Speaker(:crypt:-Z)</TD><TD>PGP pass phrase</TD></TR>
+	<TR><TD>Speaker(:crypt:-O)</TD><TD>File path</TD></TR>
+	
+	<TR><TD>Mike(args:simplecompression)</TD><TD>set to "-C" to turn on simple
+		compression, set to " " to turn it off.  Yes, its off
+		value is a space.</TD></TR>
+
+	<TR><TD>Mike(args:compression)</TD><TD>set to "-N" to turn off all
+		compression, set to the appropiate sfmike argument for
+		that compression setting.  ie "-T" will turn on GSM,
+		-LPC10R1 will set up LPC10, one copy.  Default is GSM</TD></TR>
+
+	<TR><TD>Mike(args:protocol)</TD><TD>set to " " for Speak Freely protocol,
+		otherwise set to the sfmike argument for the protocl
+		you want.</TD></TR>
+
+	<TR><TD>Mike(args:user)</TD><TD>additional arguments for sfmike, provided
+		just in case.</TD></TR>
+	</TABLE><P>
+
+	To set one of these variables, you can use the following
+	syntax:<P>
+
+	<PRE>
+		set <variable name> "new value"
+	</PRE>
+
+	ie:
+
+	<PRE>
+		set Mike(args:compression) "-LPC"
+	</PRE>
+
+	to set the default compression as LPC.<P>
+	
+	LWL information is taken from the environment variables:<P>
+
+		<TABLE BORDER="1">
+		<TR><TD>SPEAKFREE_LWL_TELL</TD><TD>comma seperated list of
+			hosts</TD></TR>
+		<TR><TD>SPEAKFREE_ID</TD><TD>information of the format of:
+			"fullname:email:phone:location"</TD></TR>
+		</TABLE><P>
+
+<B>.xspeakfree.hostlist</B><P>
+	
+	This file is parsed at startup, it is NOT a Tcl file, rather a
+	plain text file containg two types of lines:  comments and
+	hostnames.  comment lines begin with a '#'.  host names look
+	like:<P>
+
+	<PRE>
+	hostname	comment
+	</PRE>
+
+	these hostnames are loaded into the target host list at
+	startup and the comment field is placed in parens next to the
+	name.  ie a line like this in .xspeakfree.hostlist:<P>
+
+	<PRE>
+	nj5.injersey.com	Shawn Pearce
+	</PRE>
+
+	becomes:<P>
+
+	<PRE>
+	nj5.injersey.com (Shawn Pearce)
+	</PRE>
+
+	in the host list.<P>
+	
+	This file is NOT modified by the program, it is to be modified
+	by the user.  Perhaps in the future I will make it modifiable
+	through the program.<P>
+
+<B>Main Web Site:</B><P>
+
+	<LI><A HREF="http://www.spearce.org/projects/xspeakfree/">http://www.spearce.org/projects/xspeakfree/</A><BR>
+
+<B>Author:</B><P>
+	Shawn Pearce
+<P>
+<B>Contributors:</B><P>
+	Johnny C. Lam: NetBSD package.<BR>
+	Ivan Popov: Blowfish support.<BR>
+<P>
+
+</TD></TR>
+
+<TR><TD BGCOLOR="#d2b48c" VALIGN="TOP">
+</TD></TR>
+</TABLE>
+
+</BODY></HTML>

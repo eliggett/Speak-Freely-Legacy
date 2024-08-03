@@ -1,0 +1,47 @@
+The following was copied from OSS Programmer's Guide 
+http://www.opensound.com/pguide/index.html
+-------------------------------------------------------------------------
+http://www.opensound.com/pguide/audio2.html
+Section "Buffering - Improving real time performance":
+
+Buffering parameters
+
+In some cases it may be desirable to select the fragment size explicitly.
+For example in real time applications (such as games) it is necessary to
+use relatively short fragments. Otherwise delays between events on the
+screen and their associated sound effects become too long. OSS API
+contains an ioctl call for setting the fragment size and maximum number of
+fragments.
+
+     int arg = 0xMMMMSSSS;
+
+     if (ioctl(audio_fd, SNDCTL_DSP_SETFRAGMENT, &arg)) error();
+
+Argument of this call is an integer encoded as 0xMMMMSSSS (in hex). The 16
+least significant bits determine the fragment size. The size is 2SSSS. For
+example SSSS=0008 gives fragment size of 256 bytes (28). The minimum is 16
+bytes (SSSS=4) and the maximum is total_buffer_size/2. Some devices or
+processor architectures may require larger fragments in this case the
+requested fragment size is automatically increased.  The 16 most
+significant bits (MMMM) determine maximum number of fragments. By default
+the deriver computes this based on available buffer space. The minimum
+value is 2 and the maximum depends on the situation. Set MMMM=0x7fff if
+you don't want to limit the number of fragments.
+
+NOTE! This ioctl call must be used as early as possible. The optimum
+location is immediately after opening the device. It is NOT possible to
+change fragmenting parameters second time without closing and reopening
+the device. Also note that calling read(), write() or the above three
+ioctl calls "locks" the buffering parameters which may not be changed
+after that.
+
+NOTE2! Setting the fragment size and/or number of fragments too small may
+have unexpected results (at least in slow machines). UNIX is multitasking
+environment where other processes may use CPU time unexpectedly. The
+application must ensure that the selected fragmenting parameters provide
+enough "slack" so that other concurrently running processes don't cause
+underruns. Each underrun causes a click or pause to the output signal.
+With relatively short fragments this may cause whining sound which is very
+difficult to identify. Using fragment sizes shorter than 256 bytes is not
+recommended as the default mode of application. Short fragments should
+only be used when explicitly requested by user.

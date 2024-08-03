@@ -1,0 +1,415 @@
+.TH "SFREFLECT" 1 "16 APR 1998"
+.UC 4
+.SH NAME
+sfreflect \- Speak Freely conference reflector
+.SH SYNOPSIS
+.nh
+.na
+.B sfreflect
+[
+.B  \-du
+]
+[
+.BI \-h path
+]
+[
+.BI \-i interval
+]
+[
+.BI \-m host[:port]
+]
+[
+.BI \-p port
+]
+[
+.BI \-r interval
+]
+[
+.BI \-v timeout
+]
+.hy
+.ad
+.SH DESCRIPTION
+.B sfreflect
+implements a rudimentary multiparty conferencing facility.  Running on
+a server (which need not have audio hardware), it accepts connections
+from users and, whenever sound is received from any connected user,
+immediately retransmits it to all others.  Users may join and leave
+the conference at will simply by opening or closing a connection to
+the reflector.  The reflector can automatically publish an HTML file
+listing members currently in the conference, which can be examined by
+any user with a Web browser.
+.PP
+A reflector can invite connections by publishing its existence
+on one or more directory servers.  See the ``Look Who's Listening''
+section in the
+.B sfspeaker
+manual page for details on how to set the environment variables.
+.SH OPTIONS
+.TP
+.B \-d
+Enables debug output.
+.TP
+.BI \-h path
+An HTML file is written to the given
+.I path
+name (a fully qualified file name, less the
+.B .html
+suffix), listing all users currently connected to the reflector.
+Publishing this HTML file as a World-Wide Web document on the server
+allows easy access to a list of all active users on the reflector.
+Unlike
+.BR sflwld ,
+.B sfreflect
+always includes the identity of connected users in its
+HTML output, even if they have requested ``exact match only''.
+Participating in a conference is equivalent to connecting
+to another user, in which case identity is also always shown.
+.TP
+.BI \-i interval
+The HTML file written by the
+.B \-h
+option will be updated every
+.I interval
+seconds if a change has occurred during that period.  If
+.I interval
+is set to zero, the file is updated immediately after any change.
+.TP
+.BI \-m host[:port]
+Audio received by the reflector will be sent, in addition to the
+connected hosts, also to the specified
+.I port
+on
+.IR host .
+If no
+.I port
+is given, the default
+.B sfspeaker
+port of 2074 is used.  The monitor facility is primarily intended
+to permit participating in a conference from the same machine on
+which
+.B sfreflect
+is running, but can be used to relay the conference to any host and port
+on the network.  See the section ``Single Machine Set-up''
+below for additional details.
+.TP
+.BI \-p port
+Causes
+.B sfreflect
+to listen on the specified
+.I port
+number instead of the default
+port of 4074.
+.TP
+.BI \-r interval
+The HTML written by the
+.B \-h
+option will contain a client-pull request which causes the user's
+Web browser (if it supports client-pull) to automatically
+refresh the document every
+.I interval
+seconds.  If no
+.B \-r
+option is specified or
+.I interval
+is set to 0, no client-pull updating will occur.  Note the
+distinction between the
+.B \-i
+and
+.B \-r
+options;
+.B \-i
+specifies how frequently
+.B sfreflect
+updates the HTML file on the server, while the
+.B \-r
+option determines the interval between automatic downloads
+of this file to users displaying it in their Web browsers.
+It doesn't make sense to set the
+.B \-r
+option to a shorter
+.I interval
+than the
+.B \-i
+option, but to reduce network traffic it may be eminently reasonable
+to update the HTML file every 30 seconds or so, but only have users
+refresh their browser display every two to five minutes.
+.TP
+.B \-u
+Prints how-to-call information.
+.TP
+.BI \-v timeout
+When
+.B sfreflect
+receives a packet from a host it hasn't heard from in
+.I timeout
+seconds, it will attempt to resolve the host name and print a
+message on standard error noting the new connection and what
+compression mode is being used.  If the
+host name can't be determined, the numeric IP address is shown.
+After
+.I timeout
+seconds of inactivity a message is issued indicating the host is idle.
+If no
+.I timeout
+is specified, 180 seconds is used.
+.SH FILES
+The
+.B \-h
+option creates an HTML file with the given base name and an
+extension of
+.BR .new ,
+then swaps the new file for any previously-existing file with
+an extension of
+.BR .html .
+The file update process avoids the risk of a user's receiving a file
+in the process of being written.
+.SH "APPLICATION NOTES"
+To participate in a
+.B sfreflect
+conference, you must determine the host name running
+the reflector and the port number it listens
+to.  Start
+.B sfspeaker
+with the
+.BI \-p port
+option specifying the reflector's port number.
+If you don't specify the reflector's port number,
+.B sfspeaker
+will listen on the default port of 2074; if the reflector
+uses a different port you will not hear the packets it
+returns to you.  Then start
+.B sfmike
+specifying the reflector host name and port number
+as
+.IR hostname : port .
+The reflector will not forward sound from the conference
+until you connect to it with
+.BR sfmike ;
+starting
+.B sfspeaker
+is necessary but not sufficient.
+.PP
+Users of Speak Freely for Windows can join a conference simply by
+opening a new connection window and entering the reflector's
+.IR hostname : port .
+Speak Freely for Windows automatically
+listens for packets on all ports to which is has open connections.
+.PP
+.B sfreflect
+works by simple packet replication; sound packets received from any user
+connected to the reflector are immediately resent, unmodified, to
+all other parties to the conference (but not to the originator), with
+whatever protocol, compression, and encryption modes were selected
+by the sender.  This has several consequences you need to be aware of in order
+to run a successful conference.  First of all, the site running the
+reflector needs to have sufficient bandwidth in its connection to the
+Internet backbone to permit sending a copy of every packet received
+to each member in the conference.  For example, suppose you routinely
+use GSM compression to communicate over a 28.8 Kb dial-up link to your
+Internet Service Provider, having no bandwidth problems because
+GSM compression uses only slightly more than half of your available
+bandwidth.  If you attempted to run
+.B sfreflect
+and had three parties in the conference, performance would be marginal
+since each packet received would have to be sent to the other two
+people, and that would exceed the capacity of the 28.8 Kb line.  To
+avoid lost packets (at least with long individual transmissions) you'd
+need a faster modem link.  Reflectors for conferences with a large
+number of participants can be run successfully on fast local networks,
+but are only usable across the Internet if the reflector site has high
+bandwidth connectivity.
+.PP
+It is essential that all participants in a conference,
+even if they have full-duplex audio hardware, operate in
+push-to-talk or Voice Activation (VOX or squelch) mode
+whilst connected to the reflector.  Transmitting continuously,
+as can be done on a full-duplex connection, will flood the
+reflector with packets and disrupt the transmissions
+of others.  As is the case with half-duplex point-to-point connections,
+it's a good idea for all participants in a conference to verbally
+indicate the end of a transmission by saying ``over'' or
+the equivalent.
+.PP
+Connections to reflector sites should use Speak Freely
+protocol exclusively, not RTP or VAT.
+.B sfspeaker
+assumes a given sender will use only one protocol at a
+time.  Since the reflector is considered a single connection,
+.B sfspeaker
+has no way to determine the correct protocol if it receives
+an intermixed stream of packets in various protocols.  Using
+the default Speak Freely protocol guarantees participants in
+the conference will be able to hear packets from all senders.
+.PP
+.B sfreflect
+relays packets in a variety of compression schemes without
+difficulty, and
+.B sfspeaker
+will decompress them with the appropriate algorithms and play
+them properly.  If, however, a given compression scheme overloads
+the network bandwidth or CPU capacity of one or more participants in the
+conference, they will hear garbled audio even though others
+may receive the same transmission perfectly.  When setting up
+a conference, it's best to specify a recommended compression
+mode appropriate to the computers and connectivity of the
+expected participants and urge them to adopt that mode.
+.PP
+.B sfreflect
+correctly forwards encrypted packets.  As long as all
+participants in a conference have received and supply the
+correct key, they can communicate secure against eavesdropping
+by others who may connect but do not know the conference key.  The
+automatic key generation and exchange using PGP
+.RB ( \-z
+option on
+.BR sfmike )
+cannot be used in a conference, as it is strictly a
+two-party transaction.  Instead, distribute
+keys to participants in advance by electronic mail encrypted
+with PGP.
+.PP
+Like all the other components of Speak Freely,
+.B sfreflect
+is intended for communication among cooperating
+individuals.
+.B sfreflect
+contains no ``social engineering'' mechanisms to deter or
+prevent abuse.  Users connected
+to the reflector can interrupt one another just as they can
+in a conference room, and a user who transmits incessantly
+can disrupt the proceedings as effectively as a
+heckler in an auditorium.  One can easily envisage a variety
+of technological fixes which would minimise the impact of
+this kind of behaviour; indeed, systems intended for
+general public access have incorporated them for many
+years.
+.B sfreflect
+is neither intended nor recommended for open access ``chat'' applications.
+It can, if adequate bandwidth is available and participants
+understand the constraints of the medium and cooperate with one
+another, permit small conferences where people can come
+and go as they like without any central administration other than
+a machine running
+.BR sfreflect .
+.SH "SINGLE MACHINE SET-UP"
+In the simplest configuration of
+.BR sfreflect ,
+it runs on a server distinct from
+any machine used to access the reflector.  You can host as
+many different conferences as you wish on the same server
+(assuming it has adequate Internet connectivity for the
+aggregate bandwidth) simply by running multiple copies of
+.B sfreflect
+with each conference assigned its own unique port.
+.PP
+Many potential users of
+.B sfreflect
+may not have the luxury of a machine to dedicate to it.
+.BR sfreflect 's
+``monitor host'' facility
+.RB ( \-m
+option) permits hosting and participating in a
+conference on a single machine.  It's a little
+confusing to set up, but once properly configured it will
+get the job done.  The fundamental problem which must
+be overcome is that
+.B sfreflect
+listens and transmits on the port assigned to the
+conference; users on other machines simply start
+.B sfspeaker
+and
+.B sfmike
+specifying that port, and the reflector does the rest.
+But on the machine running
+.BR sfreflect ,
+one cannot start
+.B sfspeaker
+on the conference port because it has already been assigned
+to the reflector.
+To work around this, use the
+.B \-m
+option on
+.BR sfreflect
+and specify the local machine name (normally you can omit the
+optional port specification and use the default port of
+2074).  You can now start a copy of
+.B sfspeaker
+which listens on that port, and connect to the conference
+in the usual manner with
+.BR sfmike .
+The reflector is careful never to forward audio to the
+host on which it is running, and the monitor host
+facility doesn't forward monitor packets from the local
+machine, so you can listen to the conference without
+feedback, echo, or locally duplicated packets.  Here's
+a concrete example of how to set everything up:
+assume your machine has a host name of
+``gizmo'' and you wish to host a conference on port
+5214.  You routinely run
+.B sfspeaker
+on the default port of 2074 for regular conversations.
+So, you'd start the reflector and
+.B sfspeaker
+as follows:
+.br
+.in +10
+.B "sfreflect -v -p5214 -mgizmo &"
+.br
+.B "sfspeaker -v &"
+.in
+.br
+which will copy all audio the reflector receives on port
+5214 to the default port of 2074 on gizmo, where
+.B sfspeaker
+will play it.  You can now join the conference with the
+command:
+.br
+.in +10
+.B "sfmike gizmo:5214"
+.in
+.br
+and transmit and receive in the usual manner.  If you wish
+to announce the conference and/or yourself on a Look
+Who's Listening server, set the environment
+variables for the conference prior to starting
+.B sfreflect
+and for yourself before starting
+.BR sfspeaker .
+See the ``Look Who's Listening'' section of the
+.B sfspeaker
+manual page for additional details.
+.SH BUGS
+It is easy to imagine thousands of zowie features which might be added
+to this program, including transforming it into a complete mixer which
+could receive packets from connections in a variety of protocols and
+compression modes, mix or interleave them in an intelligent fashion,
+and retransmit the composite audio stream in a specified
+protocol and compression.  Since at present it's unclear how many
+potential users of a conferencing program such as this have adequate
+connectivity to make effective use of it, it's unwise to invest the
+much greater effort such an elaborate program would require without
+first getting some experience with a much simpler tool.
+.SH ACKNOWLEDGEMENTS
+The implementation of MD5 message-digest algorithm
+is based on a public domain version written by Colin Plumb in 1993.
+The algorithm is due to Ron Rivest.  The algorithm is described
+in Internet RFC 1321.
+.SH "SEE ALSO"
+.PD
+.BR sfecho (1),
+.BR sflwld (1),
+.BR sfmike (1),
+.BR sfspeaker (1)
+.ne 4
+.SH AUTHOR
+.RS 5
+.nf
+John Walker
+WWW:    http://www.fourmilab.ch/
+.fi
+.RE
+.PP
+This program is in the public domain.
+This software is provided ``as is'' without express or
+implied warranty.

@@ -1,0 +1,878 @@
+.TH "SFSPEAKER" 1 "3 MAR 2003"
+.UC 4
+.SH NAME
+sfspeaker \- Speak Freely sound receiver utility
+.SH SYNOPSIS
+.nh
+.na
+.B sfspeaker
+[
+.B  \-dgnq
+]
+'in +5n
+[
+.BI \-a reply_file
+]
+[
+.BI \-b ``busy_command''
+]
+[
+.BI \-ba AESKey
+]
+[
+.BI \-bf BlowfishKey
+]
+[
+.BI \-bx AESHexKey
+]
+[
+.BI \-e ``connect_command''
+]
+[
+.BI \-f ``rate_factor''
+]
+[
+.B \-fa
+]
+[
+.BI \-i IDEAkey
+]
+[
+.BI \-j delay , idle
+]
+[
+.BI \-k DESkey
+]
+[
+.BI \-m multi_group
+]
+[
+.BI \-nat [hostname[:port]]
+]
+[
+.BI \-no [lpc|lpc10[ r n]|celp|f[c]|t]
+]
+[
+.BI \-o keyfile
+]
+[
+.BI \-p port
+]
+[
+.BI \-r [+]recfile
+]
+[
+.BI \-s level[,timeout]
+]
+[
+.BI \-v timeout
+]
+[
+.BI \-w port
+]
+[
+.BI \-y outdev[:ctldev]
+]
+[
+.BI \-z [Pass_phrase]
+]
+.in -5n
+.hy
+.ad
+.SH DESCRIPTION
+.B "Speak Freely"
+allows users of a variety of Unix and Unix-like
+machines equipped with audio hardware
+connected by a network to converse, using the audio input and output
+facilities of the system to digitise and later reconstruct the
+sound and the network to relay sound packets.
+Optional compression is provided, allowing conversations
+over relatively low-bandwidth Internet links as well as local area
+networks.
+.B "Speak Freely" 
+consists of two programs,
+.B sfmike
+and
+.BR sfspeaker .
+The
+.B sfspeaker
+program must be running on a machine to allow it to receive
+sound sent with the
+.B sfmike
+program.  You can execute
+.B sfspeaker
+in the background; it only uses the audio hardware when sound
+is actually being received.
+.PP
+If requested by setting various environment variables,
+.B sfspeaker
+can publish your identity and Internet address
+on a Look Who's Listening server.  This enables other
+users, by querying the server, to determine if you're on line.
+If you have a dial-up Internet connection that assigns you a different
+host name and Internet address each time you connect, Look
+Who's Listening permits others to find the address of your current
+connection, whatever it may be.
+.PP
+To facilitate use of
+.B "Speak Freely"
+behind a NAT/MASQ router,
+.B sfspeaker
+can share sockets with
+.BR sfmike .
+This behaviour is enabled with the
+.B \-nat
+option described below. Note that both parties to such a conversation
+must enable socket-sharing. Using the 
+.B \-nat
+option also enables the
+.BR \-g ,
+.BR \-no ,
+and
+.B \-s
+options for controlling gain, compression type, 
+and squelch respectively.
+.PP
+You can supply an image of your face (or anything else you like)
+as a 256 colour Microsoft bitmap (.bmp) file which will be sent to hosts you
+connect to.  If you have the
+.B xv
+image display utility installed on your system, you'll be able to see
+the face images published by users who connect to you.
+.SH OPTIONS
+.TP 10
+.BI \-a reply_file
+When a new host connects,
+.B sfspeaker
+will write an executable shell script into the given
+.I reply_file
+containing a command that invokes
+.B sfmike
+to reply to the host.  By default, the command is ``sfmike -t $*
+.IR hostname '',
+where
+.I hostname
+is the Internet host name or IP address of the connecting host.
+The user can reply to the host simply by executing the
+.IR reply_file .
+You can create a custom reply command by specifying it after
+the
+.IR reply_file ,
+separated by a space (be sure to enclose the argument to the
+.B \-a
+option in quotes when doing this).  The ``$*'' specification
+allows you to supply additional options to
+.B sfmike
+by including them on the
+.I reply_file
+command line.
+another host,
+.B sfspeaker
+will execute the specified
+.I busy_command
+to notify the host that the connection was rejected.  The
+.I busy_command
+should be enclosed in quotes, and must contain the
+.B printf
+format phrase ``%s'' at the position the IP address of
+the host originating the rejected connection is to be
+interpolated.  If no
+.I busy_command
+is supplied, a default of:
+.ce 1
+-b"sleep 10; sfmike %s busy.au"
+is used.  The ten second delay is intended to allow users
+with half-duplex audio hardware to receive the busy signal
+transmission after sending an initial greeting and switching
+back to receive mode awaiting a reply.  Because the
+.B \-bf
+option is used to specify a key for Blowfish or AES encryption
+(see below), if the first character of your busy command is one
+of the letters ``a'', ``f'', or ``x'' simply quote it and
+precede it with a space.
+.TP
+.BI \-ba key
+The specified
+.I key
+is used to decrypt sound received
+using the FIPS-197 Advanced Encryption Standard (AES) algorithm.
+The key is a text string which is hashed to generate a 128 bit key.
+You can specify a 256 bit key by supplying two key phrases
+after the
+.B \-ba
+option, separated by a plus sign (``+'').
+.TP
+.BI \-bf key
+The specified
+.I key
+is used to decrypt sound received
+using the Blowfish algorithm.
+.TP
+.BI \-bx hexkey
+The specified
+.I hexkey
+is used to decrypt sound received
+using the FIPS-197 Advanced Encryption Standard (AES) algorithm.
+The key is between one and 64 hexadecimal digits which specify
+a 128, 192, or 256 bit key depending on how many digits are
+given.  No hashing of the key is done.  If fewer digits are
+given than the key size, the specified digits are left justified
+and the balance of the key filled with zeroes.
+.TP
+.B \-d
+Enables debug output from
+.B sfspeaker
+whether requested by the remote copy of
+.B sfmike
+or not.
+.TP
+.BI \-e connect_command
+When a new hosts connects,  the designated
+.I connect_command
+will be executed, with the string ``%s'' replaced by the fully
+qualified host name of the connecting site.  This can be used to
+auto-reply to hosts which connect.
+.TP
+.BI \-f rate_factor
+The specified
+.I rate_factor
+will be used to adjust the rate at which
+.B sfspeaker
+plays audio it receives.  By default, audio is played at
+8000 samples per second.  The
+.IR rate_factor ,
+specifies, as a percentage, how much faster (if positive)
+or slower (if negative) the audio should be played.  The
+factor may contain a decimal fraction.  For example, a
+specification of
+.B \-f1.5
+will cause audio to be played 1.5% faster than normal.
+The
+.B \-f
+option allows you to compensate when a site is
+continuously transmitting audio at a rate faster
+than your machine plays it, which is usually the result
+of slight differences in clock rates on the two machines.
+You should rarely need to adjust the speed more than a few
+percent.  In most cases the
+.B \-fa
+option described below, which automatically adjusts the
+output rate to match that of the transmitting site, is
+preferable.  You can use an explicit
+.B \-f
+option along with
+.BR \-fa ;
+in that case the automatically determined rate will be
+adjusted by the given
+.IR rate_factor .
+.TP
+.B \-fa
+The rate at which
+.B sfspeaker
+plays audio will be automatically adjusted to approximate
+that at which audio is received from transmitting sites.
+This avoids long delays due to differences in audio rates
+when connected to a site which transmits continuously
+(either broadcasting or sending in full-duplex mode).
+You can further adjust the output rate by specifying
+a second
+.B \-f
+option with a
+.I rate_factor
+as described above.
+.TP
+.B \-g
+Automatic gain control. See
+.BR sfmike (1).
+.TP
+.BI \-i key
+The specified
+.I key
+is used to decrypt sound received
+using the International Data Encryption
+Algorithm (IDEA).
+.TP
+.BI \-j delay , idle
+Jitter compensation is enabled.  This delays playing sound
+by
+.I delay
+milliseconds to reduce gaps due to irregular packet
+arrival times.  The jitter delay is reset when
+no sound is received for
+.I idle
+milliseconds.  If no
+.I idle
+time is given, twice the
+.I delay
+is assumed.  If neither
+.I delay
+nor
+.I idle
+are specified, a one second delay and two second idle
+time are used.  The mininum
+.I delay
+and
+.I idle
+times are 250 milliseconds.
+.B Note:
+jitter compensation requires an audio output driver
+capable of buffering as many samples as arrive during the
+specified
+.IR delay .
+If the audio driver on your machine cannot
+perform this buffering, the
+.B \-j
+option may yield unintelligible output.
+.TP
+.BI \-k key
+The specified
+.I key
+is used to decrypt sound received
+using a slightly modified version of the Data Encryption Standard
+algorithm (the initial and final permutations, which do not contribute
+to the security of the algorithm and exist purely to deter software
+implementations of DES are not performed).
+.TP
+.BI \-m multi_group
+In addition to messages directed specifically to the host
+on which it is running,
+.B sfspeaker
+will listen for messages sent to the IP multicast group
+.IR multi_group ,
+which can be specified either as a symbolic group name or as
+a numeric IP address.  Any number of multicast groups can be
+monitored simultaneously, up to the system maximum (usually
+20).  If the system on which
+.B sfspeaker
+is running does not support multicast, this option will
+not be available.
+.TP
+.B \-n
+Disables remote ring requests.  Sun users who have connected the
+audio output jack to a higher quality speaker may wish to set
+this to prevent remote users from diverting audio back to
+the built-in speaker.
+.TP
+.BI \-nat [hostname[:port]]
+Enables socket-sharing for NAT/MASQ connections. The peer who is
+.I not
+behind a NAT/MASQ router starts
+.B sfspeaker
+first, specifying only
+.BR \-nat ,
+and the peer behind the NAT/MASQ router connects by specifying
+.BI \-nat hostname[:port]
+in conjunction with any options concerning compression, gain and squelch.
+Note that when using this option, there is no need to start
+.B sfmike
+since
+.B sfspeaker
+will start it automatically.
+.TP
+.BI \-no [lpc|lpc10[ r n]|celp|f[c]|t]
+Compression type. Used in conjunction with the
+.B \-nat
+option.  If
+.B \-nat
+is specified and
+.B \-no
+is not, compression type will be the same as the peer's.  If
+.BI \-nat hostname
+is used, and
+.B \-no
+is not, compression type will default to whatever
+.B sfmike
+defaults to. See
+.BR sfmike (1).
+.TP
+.BI \-o filename
+The contents of the specified
+.I filename
+are used as a ``key file'' to decrypt sound data received.
+.TP
+.BI \-p port
+Causes
+.B sfspeaker
+to listen on the specified port number instead of the default
+port specified by ``INTERNET_PORT'' in the
+.BR Makefile .
+.TP
+.B \-q
+Quiet--disables debug output from
+.B sfspeaker
+unconditionally.
+.TP
+.BI \-r [+]filename
+Record all audio received in the named
+.I filename
+in Sun audio file format.  This provides a crude ``answering machine''
+facility.  If you're going to be away from your machine, run
+.B sfspeaker
+with this option so any sound you miss will be recorded in your absence.
+When you return, play the sound file to hear messages from people who
+tried to get in touch while you were away.  If
+.I filename
+already exists and a plus sign precedes the name, sound is appended to
+the file rather than overwriting previously saved sound.
+.TP
+.BI \-s level[,timeout]
+Squelch. Used in conjunction with
+.BR \-nat ,
+see
+.BR sfmike (1).
+.TP
+.B \-u
+Prints how-to-call information.
+.TP
+.BI \-v timeout
+When
+.B sfspeaker
+receives a packet from a host it hasn't heard from in
+.I timeout
+seconds, it will attempt to find the host name and print a
+message on standard error noting the new connection.  If the
+host name can't be found, the numeric IP address is given.
+After
+.I timeout
+seconds of inactivity a message is issued indicating the host is idle.
+If no
+.I timeout
+is specified, 180 seconds is used.
+.TP
+.BI \-w port
+.B sfspeaker
+publishes the identity of the machine it is running on and the
+given
+.I port
+(2074 if none is given), on Look Who's Listening servers
+as specified by the
+.BI SPEAKFREE_LWL_ xxx
+environment variables, but does not open network input or listen for
+packets.  This option is used by the Voice on Demand server,
+.BR sfvod ,
+to identify itself to Look Who's Listening servers.
+.TP
+.BI \-y outdev[:ctldev]
+This option allows you to override the defaults for the name
+of the audio output device file (for example
+.BR /dev/audio )
+and, optionally, the audio control device file, specified
+after the output device, separated by a colon.  If the first
+character of either the output or control device specification
+is a sharp sign, ``#'', the balance is taken as an integer
+giving the number of an already-open file descriptor in a
+parent process which is launching
+.BR sfspeaker .
+This facility (or, if you like, gimmick) allows programs
+such as
+.B sflaunch
+to evade the restriction in some audio drivers which support
+full-duplex but don't permit two programs to simultaneously
+open the audio device files.  This option is not available on
+Silicon Graphics or other platforms which do not use device
+files for audio I/O.
+.TP
+.BI \-z pass_phrase
+When a
+.BR pgp/gpg -encrypted
+session key is received,
+.B pgp
+or
+.B gpg
+is invoked to decrypt it.  Decryption requires your RSA private
+key, for which the pass phrase must be provided.  By default,
+you are prompted for the pass phrase each time a session is initiated.  You
+can override this by specifying the pass phrase using the PGPPASS
+environment variable or by using the
+.B \-z
+option on speaker to supply the pass phrase.  The given pass phrase is
+then passed to the encryption package
+when it is invoked.
+If the pass phrase consists of more than one word, be sure to enclose
+it in quotes.
+If no pass phrase is given,
+.B sfspeaker
+prompts you for the pass phrase when it is first invoked.  If you're
+worried about your pass phrase being compromised through specification
+as an environment variable or command line argument, this allows you to
+enter the pass phrase only once per execution of
+.BR sfspeaker .
+Be aware, however, that
+.B sfspeaker
+continues to pass the phrase
+via a command line argument when it is invoked to decode the session
+key.
+.SH "LOOK WHO'S LISTENING"
+Speak Freely's Look Who's Listening mechanism allows you to publish
+information in an electronic telephone directory at a cooperating
+Internet site.
+Whenever you're connected to the Internet and running
+.BR sfspeaker ,
+other users anywhere on the Internet can, by querying that site, find
+out you're on line and where to contact you.  If you have a dial-up
+connection to the Internet which assigns you a different host name
+and Internet (IP) address each time you connect,
+Look Who's Listening allows people to find you at the address you're currently
+connected to.
+.PP
+To publish your information with a Look Who's Listening server, set
+the following environment variables before running
+.BR sfspeaker .
+As long as you don't set the
+.B SPEAKFREE_LWL_TELL
+variable, no other site will be notified of your use of
+Speak Freely and remote users will have no way to determine
+whether you're running
+.B sfspeaker
+or not.  If privacy and discretion are important to you, think
+carefully before publishing your information and if you decide
+to proceed, what information you supply.  Anything you send to a
+Look Who's Listening site is potentially available to any user
+on the Internet.  Remember that Speak Freely won't disclose
+anything you don't explicitly request be published.
+.PP
+To enable publication, set the environment variable
+.B SPEAKFREE_LWL_TELL
+to the name of the Look Who's Listening host where you wish to
+publish your address.  A public Look Who's Listening host is currently
+available at the site
+.BR lwl.fourmilab.ch .
+Anybody can create a host simply by installing the
+.B sflwld
+program supplied with Speak Freely; this allows private networks
+to maintain directories that aren't accessible to users from
+the Internet at large, or interest groups to create ``meeting rooms''
+for those interested in specific topics.  If the site uses a port
+number other than the standard of 2076, you can specify the port
+number after the host name, separated by a comma.
+.PP
+Setting
+.B SPEAKFREE_LWL_TELL
+to a valid Look Who's Listening host publishes default information
+about you and your site determined from your password file entry.
+You can publish your entry on multiple hosts by listing them on
+the
+.B SPEAKFREE_LWL_TELL
+variable, separated by commas.
+You can supply more complete and accurate information by setting the
+environment variable
+.B SPEAKFREE_ID
+to a string of the form:
+.PP
+.IB "full name" :
+.IB "E-mail address" :
+.IB "phone number" :
+.I "location"
+.PP
+With most shells you'll have to enclose this specification
+in quotes.  Think about the consequences of making your telephone
+number and geographical location potentially available to any
+user on the Internet before you include them on a
+.B SPEAKFREE_ID
+statement.  Your E-mail address is the primary means by which
+others contact you; this should be the address you usually give
+to individuals who wish to contact you or include, for example,
+on your business card.  It needn't have anything to do with the
+host and network on which you're running
+.BR sfspeaker .
+For example, if you usually give out your E-mail address at work, you
+might specify
+.B jetson@sprockets.com
+even though you connect to the Internet at home as
+.BR george@slip3986.terra.ssol.net .
+Normally, the server will reply to a query with all active
+sites which contain the query string in either the E-mail address  
+or full name fields.  If you precede the E-mail address with an
+asterisk, only queries which exactly match the E-mail address will
+return your contact information.  This allows dial-up users to allow
+those knowing their E-mail address to contact them without informing
+any Internet user who's curious that they're on line.  The
+security-conscious should note that this protection is provided by the
+Look Who's Listening server, and assumes the site you contact is
+running an unmodified version of the
+.B sflwld
+program which is operating as intended.
+.PP
+Look Who's Listening uses the Internet Real-Time Protocol (RTP)
+to communicate with the host running the server.  This protocol uses
+a ``canonical name'' to identify a user and machine so that remote
+users can usually contact the individual with Unix tools such as
+.B finger
+and
+.BR talk .
+.B sfspeaker
+creates a canonical name automatically from your user ID
+and domain name.  If no domain name is available, the user ID
+and Internet (IP) address are used to create a unique name.
+If for some reason this process yields an unusable canonical
+name, you can override it by setting the
+.B SPEAKFREE_CNAME
+variable to the canonical name you prefer.
+.SH "SHOW YOUR FACE"
+If you'd like remote users to see an image of your face (or any
+other image you like, for that matter), set the environment
+variable
+.B SPEAKFREE_FACE
+to point to the image file.  The image file must be in Microsoft
+Device Independent Bitmap (.bmp) format, in 256 colour mode, and
+should not be larger than 128x128 pixels.  The
+.B xv
+utility, available by anonymous FTP from
+.B ftp.cis.upenn.edu
+and many other public FTP archives can be used to convert images
+into this format.  If
+.B xv
+is installed on your system, face images for remote users will appear
+on the right side of your screen shortly after they connect.
+The
+.B SPEAKFREE_FACE
+variable must be defined when both
+.B sfmike
+and
+.B sfspeaker
+are run.
+.SH FILES
+On Sun workstations audio is written to the
+.B /dev/audio
+device file.
+.B sfspeaker
+acquires the audio device upon receiving sound, but automatically
+releases
+.B /dev/audio
+for output after 20 seconds elapse without any sound having been
+received.
+On Silicon Graphics machines the digital media development toolkit
+is used to access the audio hardware.
+.SH BUGS
+If sound from multiple sources arrives simultaneously at one machine,
+.B sfspeaker
+interleaves the audio packet-by-packet.  This usually results in
+unintelligible gibberish, although it's normally adequate to allow
+``butting into'' a conversation.  It might be possible to have
+.B sfspeaker
+mix the sound into one output stream, but I haven't experimented
+with this approach.
+If your conversations are frequently interrupted by
+other calls, you might try the
+.B \-b
+option, which sends a busy signal when a call arrives while
+you're already occupied with another.
+.PP
+In order to deliver acceptable (or at least tolerable) performance across
+international links,
+.BR sfmike " and " sfspeaker
+use ``Internet datagram'' socket protocol which is essentially a
+``fire and forget'' mechanism; neither flow control nor acknowledgement
+are provided.  Since sound must be delivered at the correct time in order
+to be intelligible, in real time transmission there's little one can
+do anyway if data are lost.  Consequently, bogged down lines, transmission
+errors, etc., simply degrade or destroy the quality of the audio without
+providing explicit warnings at either end that anything's amiss.
+.PP
+AES, Blowfish, IDEA, DES, and key file options encrypt every sound packet
+with the same key--no key chaining is performed.  (AES, Blowfish, DES and IDEA
+encryption do, however, use cipher block chaining
+.I within
+each packet.)  Chaining from packet to packet
+would increase security but then loss of any packet
+would make it impossible to decrypt all that followed.
+.PP
+Certain governments attempt to restrict the availability, use, and
+exportation of software with cryptographic capabilities.
+.B "Speak Freely"
+was developed in Switzerland, which has no such restrictions.  The
+AES, DES, MD5, Blowfish, and IDEA packages it uses were obtained from an
+Internet site in another European country which has no restrictions on
+cryptographic software.  If you import this software into a country
+with restrictions on cryptographic software, be sure to comply with
+whatever restrictions apply.  The responsibility to obey the law in
+your jurisdiction is entirely your own.
+.PP
+By default,
+.B sfspeaker
+listens to Internet port number 2074.  It is
+conceivable, albeit unlikely, that this might conflict with some other
+locally-developed network server.  You can specify a different port
+number with the
+.B \-p
+to option, but your
+.B sfspeaker
+won't receive audio from others that use the standard port number.
+When communicating with other applications
+using VAT or RTP protocol, you must specify the port on which the
+other application is sending.  RFC 1890 recommends port 5004 as
+the default port for RTP applications.  Many VAT protocol applications
+default to port 3456.
+.PP
+No verification that the
+.B SPEAKFREE_FACE
+image is actually a 256 colour Microsoft .bmp file is performed.
+You can, in fact, send an image in any format
+.B xv
+is able to display, as long as you're communicating with another
+Unix user.  But if you supply a non-.bmp file, Speak Freely
+for Windows won't be able to display the image.
+.SH ACKNOWLEDGEMENTS
+The Silicon Graphics audio drivers are based on the stand-alone SGI
+version developed by 
+Paul Schurman of Espoo, Finland.  Without his
+generous contribution,
+.B "Speak Freely"
+would have probably remained forever confined in an orbit
+around the Sun.
+.PP
+Andrey A. Chernov contributed code
+that enables Speak Freely to build and run on FreeBSD.
+.PP
+Hans Werner Strube contributed 
+code to allow the program to build under Solaris 2.4 without
+any source changes or need for compatibility modes.
+.PP
+The GSM compression and decompression code was developed by
+Jutta Degener and
+Carsten Bormann of the
+Communications and Operating Systems Research Group,
+Technische  Universitaet Berlin:
+Fax: +49.30.31425156, Phone: +49.30.31424315.  They
+note that THERE IS ABSOLUTELY NO WARRANTY FOR THIS SOFTWARE.
+Please see the
+.B readme
+and
+.B copyright
+files in the
+.B gsm
+directory for further details.
+.PP
+The ADPCM compression and decompression code was developed by Jack Jansen
+of the Centre for Mathematics and Computer Science, Amsterdam, The Netherlands.
+Please see the
+.B readme
+and
+.B copyright
+files in the
+.B adpcm
+directory for further details.
+.PP
+The Federal Standard 1016
+.B \-celp
+code-excited linear prediction algorithm and software were
+developed by Joseph P. Campbell Jr., Vanoy C. Welch and Thomas E. Tremain
+of the U.S. Department of Defense.  Craig F. Reese of the
+IDA/Supercomputing Research Center adapted the original
+implementation for use on general-purpose computers.
+.PP
+The linear predictive coding compression
+algorithm was developed by Ron Frederick of Xerox PARC.
+.PP
+The DES encryption code was developed by Phil Karn, KA9Q.  Please
+see the
+.B readme
+file in the
+.B des
+directory for further details.
+.PP
+The public domain implementation of U.S. Federal Standard 1015
+.B \-lpc10
+compression algorithm was developed by the United States
+Department of Defense, National Security Agency (NSA).  Please see the
+.B README
+and
+.B FAQ
+files in the
+.B lpc10
+directory for additional details.
+.PP
+The public domain implementation of the Advanced Encryption System (AES)
+was developed by Brian Gladman.  For details, please visit his
+Web page:
+.ce 1
+http://fp.gladman.plus.com/cryptography_technology/rijndael/
+and see the
+.B README
+file in the
+.B aes
+directory.
+.PP
+The Blowfish encryption module and the
+DES encryption library used for encrypting and decrypting VAT
+and RTP protocol packets were developed by Eric Young.
+Please see the
+.B README
+and
+.B COPYRIGHT
+files in the
+.B blowfish
+and
+.B libdes
+directory for further details.  The Blowfish algorithm was
+developed by Bruce Schneier and is in the public domain.
+.PP
+The IDEA algorithm was developed by Xuejia Lai and James L. Massey, of
+ETH Zurich.  The implementation used in
+.B "Speak Freely"
+was modified and derived from original C code developed by Xuejia Lai
+and optimised for speed by Colin Plumb
+The IDEA[tm] block cipher is patented by Ascom-Tech AG. The Swiss patent
+number is PCT/CH91/00117, the European patent number is EP 0 482 154 B1, and
+the U.S. patent number is US005214703. IDEA[tm] is a trademark of Ascom-Tech
+AG. There is no license fee required for noncommercial use. Commercial users
+may obtain licensing details from MediaCrypt AG at IDEA@mediacrypt.com.
+You can use IDEA encryption for noncommercial communications without a
+license from MediaCrypt AG; commercial use is prohibited without a license.
+If you don't want to obtain a license from Ascom-Tech, use AES, Blowfish, DES, or
+key file encryption instead.
+.PP
+The implementation of MD5 message-digest algorithm
+is based on a public domain version written by Colin Plumb in 1993.
+The algorithm is due to Ron Rivest.  The algorithm is described
+in Internet RFC 1321.
+.PP
+The
+.B \-e
+option support code and fixes for Linux sound drivers which do
+not support mu-law encoding were contributed by Jean-Marc Orliaguet.
+.SH "SEE ALSO"
+.PD
+.BR audio (4),
+.BR audiopanel (1),
+.BR audiotool (1),
+.BR finger (1),
+.BR gpg (1),
+.BR pgp (1),
+.BR printf (3),
+.BR sflaunch (1),
+.BR sflwld (1),
+.BR sfmike (1),
+.BR sfvod (1),
+.BR soundeditor (1),
+.BR soundfiler (1),
+.BR talk (1),
+.BR xv (1)
+.ne 4
+.SH AUTHOR
+.RS 5
+.nf
+John Walker
+WWW:    http://www.fourmilab.ch/
+.fi
+.RE
+.PP
+All modules of
+.B "Speak Freely"
+developed by me are in the public domain.
+See the
+.B readme
+and/or
+.B copyright
+files in the
+.BR aes ,
+.BR adpcm ,
+.BR blowfish, 
+.BR des ,
+.BR gsm ,
+.BR idea ,
+and
+.B libdes
+directories for conditions of use and distribution of those
+components.  This software is provided ``as is'' without express or
+implied warranty.

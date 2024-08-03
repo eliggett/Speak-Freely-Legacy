@@ -1,0 +1,77 @@
+xspeakfree:
+
+Change History:
+	0.8.1	Added support to search LWL database through
+				the sflwl tool.
+			Switched to Linux kernel style version numbering
+				where x.y.z is a version number and y is even for
+				stable releases and odd for beta releases. 
+			Fixed a bug with the hostlist popup menu where it wasn't
+				being invoked properly if the host list was empty.
+
+	0.7:	Added support for all methods of encyrption
+				to both sfmike and sfspeaker
+			Added support for SPEAKFREE_LWL_TELL and
+				SPEAKFREE_ID env variables.
+
+	0.6.2:	Changed popup menu on button 3 to be global in the window.
+
+	0.6.1:	Removed font command for backward compatibility
+
+	0.6:	Re-layout location of microphone information and
+				controls
+			Addition of microphone target field on display
+				instead of using the selection in the list
+				box.
+			Addition of sound file column in host list
+			Addition of editing of comments in host list
+			Addition of command to stop sound file playback
+
+	0.5.1:	Corrected bug where Tcl error was reported if you
+				attempted to send audio using sfmike
+			Added support for sending any sound file to any remote
+				host
+			Stopped deletion of host names from Target Host List
+				box.  Once a host connects to you its in the
+				box until you remove it by hand.
+			Added support for adding host names to Target Host
+				List without being forced to connect to them
+				first.
+			Added support for displaying error information from
+				sfmike
+			Changed Microphone Status to be read from sfmike
+				instead of being assumed
+			Created install script
+			Added support for playing any sound file back on the
+				localhost through the loopback
+
+	0.5:	Changed Target Host List back to a scrollbox
+			Added popup menu on Button-3 for Target Host List
+			Added support for -N of sfmike
+			Added option to have ring.au sent to target host upon
+				connection
+			Added option to have ring.au played when new
+				hosts connect
+			Added option to have busy.au sent if you already have
+				a connection open
+			Changed |& cat to using FIFOs for command execution
+			Changed xspeakfree to shell script to catch traps
+				and cleanup FIFOs and sub-processes correctly
+				after a signal is delivered to the process
+			Added Speak Freely version information
+			Added Tcl/Tk version information
+
+	0.4:	Added support for recording audio data from sfspeaker
+			to a file
+
+	0.3:	Fixed window resize bug, window can now be resized
+			Changed Target Host List from a scrollbox to a
+				popup menu
+			Added user argument support for sfspeaker
+			Fixed a few minor bugs with host list
+			Fixed a few minor bugs with sfmike control
+
+	0.2:	Added support for command line arguments
+			Fixed some bugs with wish v4.1
+
+	0.1:	First Public Release

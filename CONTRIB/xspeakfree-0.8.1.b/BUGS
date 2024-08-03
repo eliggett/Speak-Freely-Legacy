@@ -1,0 +1,16 @@
+xspeakfree:
+
+Bugs:
+	There aren't any, everything you see is
+	a "feature".
+
+	Requires the use of one or more FIFOs for each and every
+	single process spawned.
+
+	Cannot catch Unix signals (HUP, TERM, etc) in Tcl so /bin/sh
+	hack is currently in use.  The /bin/sh hack is annoying but
+	it works and there is really no problem with it.
+
+	Randomly when you edit your LWL information sfspeaker will
+	shutdown and sometimes refuses to restart.  Anyone shed some
+	light on this one?

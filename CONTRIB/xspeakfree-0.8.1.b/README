@@ -1,0 +1,187 @@
+xspeakfree is a Tcl/Tk (wish) frontend to Speak Freely.
+
+For more information about Speak Freely see:
+	http://www.fourmilab.ch/
+
+For more information about Tcl/Tk see:
+	http://www.scriptics.com/
+
+I am not the author of either of these packages.
+
+I recommend version 8.0 of both Tcl and Tk, however there is little
+reason an older version shouldn't work.
+
+Change History:
+	See the file HISTORY
+
+To Be Done:
+	See the file TODO
+
+Requirements:
+	wish (Tcl/Tk), suggested version 8.0p2
+	sfspeaker and sfmike, suggestion version 6.1c
+	mkfifo (your kernel must support fifos)
+	/tmp must be writable by the user using xspeakfree
+
+Installing:
+	See the file INSTALL
+
+Using xspeakfree:
+
+	There is no online help as its very simple and similiar to 
+	the Windows version of Speak Freely.  If you have a problem
+	using the program, email me and I will try to be of assitance.
+
+	xspeakfree executes a file on startup, its called
+	".xspeakfree.rc" in your HOME directory.  This file is NOT a
+	shell script, its a Tcl script source'd in though the Tcl
+	interpreter.
+	
+	To connect to a remote host and send audio, either go to
+	connection and select "New" and type in the host name, or
+	click on their name in the Target Host list with Button-3
+	(right mouse button) and select "Connect to host".
+	This will cause any current sfmike to exit and a new one to
+	start with the current settings sending audio to the newly
+	selected host.  Clicking on an already selected host name is
+	a nop.
+	
+	As hosts connect to your sfspeaker, they will be added to the
+	host list automatically.  As hosts disconnect, they will not be
+	removed from the list.  This is a change from its previous
+	behavior of removing a host from the list after a disconnect.
+
+	Check out the Options menu.  It should be self explanatory.
+	If its not, let me know.
+	
+OS Features:
+
+	If you are on an SGI, you will note there is an "Irix" menu on
+	the menubar.  Any other OS this should be omitted.
+
+	The only special support for Irix right now is launching the
+	Audio Panel directly from xspeakfree.  I'd like to add more
+	support than that, especially for ther OS's.
+
+	If people can send me what options they want for what OS, as
+	well as the output of just "uname" for their OS - or some
+	other method of dertermining from a shell the OS type, as well
+	as how to do the options (ie I have NO CLUE how to control
+	volume on a Sparc Station so you have to tell me) I'll 
+	try to add in the support for that OS.
+
+.xspeakfree.rc file:
+
+	This file is executed right before the window appears, after
+	all defaults have been programmed.  This way you can override
+	any default settings, configure your audio hardware, etc.
+
+	In order to execute a shell command, simply prefix the line
+	with a "exec", ie on my SGI my .xspeakfree.rc file has this line
+	in it to configure my input port for the microphone:
+
+	exec apanel -nodisplay -nofork -defaultout AnalogOut2 -device
+	AnalogOut2 -gain 7.5 -rate 8000 -unmute
+
+	This has the effect of running the program apanel with that
+	mess of arguments.  =)
+
+	I'm not going to help you with Tcl, go look on the web, there
+	are plenty of online manpages there.  But here's a list of the
+	variables you can modify and what effect they will have:
+	
+	All defaults for these variables are the normal Speak Freely
+	software defaults.  =)
+
+	Speaker(port) -- default port for sfspeaker to listen on
+
+	Speaker(args:jitter) -- jitter setting, must be the full
+		commandline value, ie "-J2000" for 2 seconds.
+
+	Speaker(args:disable_remote_ring) -- set to "-n" to disable
+		remote ring, " " to turn this feature off.
+
+	Speaker(:record:onoff) -- set to 1 to record audio,
+		0 to not.  default is 0.
+	
+	Speaker(:record:file) -- set to the file path to store
+		recorded audio in.  ignored unless Speaker(:record:onoff)
+		is set to 1.
+
+	Speaker(:record:append) -- set to "+" to append to record files
+		instead of overwriting.  set to "" to overwrite.
+
+	Speaker(args:user) -- additonal arguments for sfspeaker
+
+	Speaker(:crypt:method) -- set to " " to use none,
+		"-O" for file, "-I" for IDEA, "-K" for DES
+		and "-Z" for PGP pass phrase.
+
+	Speaker(:crypt:-I) -- IDEA string
+	Speaker(:crypt:-K) -- DES string
+	Speaker(:crypt:-Z) -- PGP pass phrase
+	Speaker(:crypt:-O) -- File path
+	
+	Mike(args:simplecompression) -- set to "-C" to turn on simple
+		compression, set to " " to turn it off.  Yes, its off
+		value is a space.
+
+	Mike(args:compression) -- set to "-N" to turn off all
+		compression, set to the appropiate sfmike argument for
+		that compression setting.  ie "-T" will turn on GSM,
+		-LPC10R1 will set up LPC10, one copy.  Default is GSM
+
+	Mike(args:protocol) -- set to " " for Speak Freely protocol,
+		otherwise set to the sfmike argument for the protocl
+		you want.
+
+	Mike(args:user) -- additional arguments for sfmike, provided
+		just in case.
+
+	To set one of these variables, you can use the following
+	syntax:
+
+		set <variable name> "new value"
+
+	ie:
+		set Mike(args:compression) "-LPC"
+
+	to set the default compression as LPC.
+	
+	LWL information is taken from the environment variables:
+		SPEAKFREE_LWL_TELL -- comma seperated list of hosts
+		SPEAKFREE_ID -- information of the format of:
+			"fullname:email:phone:location"
+
+.xspeakfree.hostlist
+	
+	This file is parsed at startup, it is NOT a Tcl file, rather a
+	plain text file containg two types of lines:  comments and
+	hostnames.  comment lines begin with a '#'.  host names look
+	like:
+
+	hostname	comment
+
+	these hostnames are loaded into the target host list at
+	startup and the comment field is placed in parens next to the
+	name.  ie a line like this in .xspeakfree.hostlist:
+
+	nj5.injersey.com	Shawn Pearce
+
+	becomes:
+
+	nj5.injersey.com (Shawn Pearce)
+
+	in the host list.
+	
+	This file is NOT modified by the program, it is to be modified
+	by the user.  Perhaps in the future I will make it modifiable
+	through the program.
+
+Main Web Site:
+
+	http://www.spearce.org/projects/xspeakfree/
+
+Author
+	Shawn Pearce
+	<spearce@spearce.org>

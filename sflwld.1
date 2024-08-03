@@ -1,0 +1,201 @@
+.TH "SFLWLD" 1 "12 APR 1998"
+.UC 4
+.SH NAME
+sflwld \- Speak Freely Look Who's Listening server
+.SH SYNOPSIS
+.nh
+.na
+.B sflwld
+[
+.B  \-duv
+]
+'in +7n
+[
+.BI \-f server,...
+]
+[
+.BI \-h path
+]
+[
+.BI \-i interval
+]
+[
+.BI \-m msgfile
+]
+[
+.BI \-p port
+]
+[
+.BI \-r interval
+]
+[
+.BI \-z path
+]
+.in -7n
+.hy
+.ad
+.SH DESCRIPTION
+.B sflwld
+is a server daemon which maintains a list of users running Speak
+Freely who identify themselves to the site running the server.
+.B sflwld
+responds to requests and supplies contact information to allow users
+to find one another's Internet addresses.
+.B sflwld
+allows users to find one another and establish Speak Freely conversations
+even if one or both have dial-up Internet connections where the host name
+and Internet address vary from session to session.
+Servers can forward information to one another,
+allowing a user who queries one server in a
+mutually-forwarding group to find users connected to any
+server in the group.
+.SH OPTIONS
+.TP 10
+.B \-d
+Enables debug output.
+.TP
+.BI \-f server,...
+Information received from users directly connected to this
+server will be forwarded to all servers listed.  Server names
+can be either numeric IP addresses or host names, and may
+specify a port number appended to the server address or name, separated
+by a colon.  Multiple servers can be specified, separated by commas, up
+to a maximum of 5.
+.TP
+.BI \-h path
+An HTML file is written to the given
+.I path
+name (a fully qualified file name, less the
+.B .html
+suffix), listing all users currently registered with this server.
+Publishing this HTML file as a World-Wide Web document on the server
+allows easy access to a list of all active users who have sent
+their information there.
+.TP
+.BI \-i interval
+The HTML files written by the
+.B \-h
+and
+.B \-z
+options will be updated every
+.I interval
+seconds if a change has occurred during that period.  If
+.I interval
+is set to zero, the files are updated at the moment of any change.
+.TP
+.BI \-m msgfile
+The contents of the text file
+.I msgfile
+are loaded and used as the ``server welcome message''.  This
+message usually identifies the server and points to the
+HTML file containing the list of active sites.
+.TP
+.BI \-p port
+Causes
+.B sflwld
+to listen on the specified port number instead of the default
+port specified by ``INTERNET_PORT''+2 in the
+.BR Makefile .
+Specifying a nonstandard port number will cause Speak Freely clients
+that haven't been similarly reconfigured to fail to contact the server;
+the main reason for using a nonstandard port number is to permit
+testing an experimental server on a machine which is running a
+production server.
+.TP
+.BI \-r interval
+The HTML written by the
+.B \-h
+and
+.B \-z
+options will contain a client-pull request which causes the user's
+Web browser (if it supports client-pull) to automatically
+refresh the document every
+.I interval
+seconds.  If no
+.B \-r
+option is specified or
+.I interval
+is set to 0, no client-pull updating will occur.  Note the
+distinction between the
+.B \-i
+and
+.B \-r
+options;
+.B \-i
+specifies how frequently
+.B sflwld
+updates the HTML file on the server, while the
+.B \-r
+option determines the interval between automatic downloads
+of this file to users displaying it in their Web browsers.
+It doesn't make sense to set the
+.B \-r
+option to a shorter
+.I interval
+than the
+.B \-i
+option, but to reduce network traffic it may be eminently reasonable
+to update the HTML file every 30 seconds or so, but only have users
+refresh their browser display every two to five minutes.
+.TP
+.B \-u
+Prints how-to-call information.
+.TP
+.B \-v
+Causes
+.B sflwld
+to log all connections, disconnections, and timeouts to standard
+output.
+.TP
+.BI \-z path
+An HTML file is written to the given
+.I path
+name (a fully qualified file name, less the
+.B .html
+suffix), listing all users currently registered with this server,
+regardless of whether they requested public disclosure of their
+identity by wildcard match or not.  This option allows the
+system administrator to see all users communicating with the
+server without making this information publicly available.
+There's nothing to prevent a rogue site manager from publishing
+the complete user list, but since a user can easily determine
+whether a request for "exact match only" has been complied with,
+circumspect users will shun sites which ignore their request for
+discretion.
+.SH FILES
+The
+.B \-h
+and
+.B \-z
+options create HTML files with the given base name and an
+extension of
+.BR .new ,
+then swap the new files for any previously-existing files with
+an extension of
+.BR .html .
+The file update process avoids the risk of transferring a file
+in the process of being written.
+.SH BUGS
+The number of matching items returned is limited to what will
+fit in a single 512 byte packet.  This is deliberate; users who wish
+to browse active sites should consult the HTML file published with
+the
+.B \-h
+option rather than tie up the server running
+.B sflwld
+with individual wild-card requests.
+.SH "SEE ALSO"
+.BR sflwl (1),
+.BR sfmike (1),
+.BR sfspeaker (1)
+.PD
+.ne 4
+.SH AUTHOR
+.RS 5
+.nf
+John Walker
+WWW:    http://www.fourmilab.ch/
+.fi
+.RE
+.PP
+This program is in the public domain.

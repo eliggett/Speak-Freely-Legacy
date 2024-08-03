@@ -1,0 +1,159 @@
+From mark%mailhost@leav-156-100.army.mil Fri Nov 17 15:25:54 1995
+Return-Path: <mark%mailhost@leav-156-100.army.mil>
+Date: Fri, 17 Nov 1995 08:24:35 -0600
+From: mark%mailhost@leav-156-100.army.mil (Mark B. Hamby)
+Subject: Speak Freely Tcl/Tk Interface
+
+John,
+
+I have tried several other Internet voice packages for Unix 
+and yours is by great.  I have written a quick Tcl/Tk GUI 
+interace for it, though I know you are probably working
+on a full interface yourself.  This one is kind of kludgy,
+but it works.  It requires Tcl, Tk, and Tix extensions.
+The Tix extensions could be removed in about 20 minutes.
+Of course the entire script only took a couple of hours.
+And that long because I am new to Tcl/Tk. :)
+
+Later,
+
+Mark Hamby
+RDA Logicon
+mhamby@logicon.com
+
+-----------------------------------------------------------
+#! /bin/sh 
+# \
+        tixwish "$0" "$*"   # \
+        exit
+
+proc Quit {} {
+        global Speaker
+
+        catch {set proc [pid $Speaker]}
+        catch {exec kill $proc}
+        catch {close $Speaker}
+        Hangup
+        exit
+}
+
+proc Dial {} {
+        global Host Switchhook Talkbtn Mike
+
+        if {[string length $Host] == 0 } {
+                ShowStatus "ERROR: Please enter a hostname."
+                return
+        }
+        $Switchhook config -text "Hangup" -command Hangup \
+                -background red2 -activebackground red1
+        Mute
+        $Talkbtn config -state normal
+
+        set Mike [open "| sfmike -b -t -n -s60 $Host" "r+"]
+        fileevent $Mike readable ShowMike
+}
+
+proc Hangup {} {
+        global Switchhook Talkbtn Mike
+
+        catch {puts -nonewline $Mike "q"}
+        catch {flush $Mike}
+        catch {close $Mike}
+
+        $Switchhook config -text "Dial" -command Dial \
+                -background grey85 -activebackground grey90
+        $Talkbtn config -text "Disconnected" -state disabled \
+                -background grey85 -activebackground grey90
+}
+
+
+proc Talk {} {
+        global Talkbtn Mike
+
+        $Talkbtn config -text "Press To Mute" -command Mute \
+                -background SpringGreen3 -activebackground SpringGreen2
+        ShowStatus "Microphone is ON."
+        puts -nonewline $Mike " "
+        flush $Mike
+}
+
+proc Mute {} {
+        global Talkbtn Mike
+
+        $Talkbtn config -text "Press To Talk" -command Talk \
+                -background gold2 -activebackground gold1
+        ShowStatus "Microphone is OFF."
+        catch {puts -nonewline $Mike " "}
+        catch {flush $Mike}
+}
+
+proc ShowSpeaker {} {
+        global Speaker
+
+        if [eof $Speaker] {
+                catch {close $Speaker}
+                set line "ERROR: Speaker process has crashed."
+        } else {
+           gets $Speaker line
+        }
+        ShowStatus $line
+}
+
+proc ShowMike {} {
+        global Mike
+
+        if [eof $Mike] {
+                set line "ERROR: Invalid hostname."
+                Hangup
+        } else {
+           gets $Mike line
+        }
+        ShowStatus $line
+}
+
+
+proc ShowStatus { args } {
+        global Status
+
+        $Status subwidget listbox insert end [join $args]\n
+        $Status subwidget listbox see end
+}
+
+# Set window title.
+wm title . "Speak Freely"
+
+# Create a frame for buttons and entry.
+tixButtonBox .bar -padx 10 -pady 10
+pack .bar -side top -fill x
+
+set Switchhook [button .bar.switchhook -text Dial -command Dial -width 8]
+pack $Switchhook -side left
+
+tixLabelEntry .bar.host -label "Host:"
+.bar.host subwidget entry config -width 10 -textvariable Host
+pack .bar.host -side left -fill x -expand true
+
+# Create command buttons.
+button .bar.quit -text Quit -command Quit
+pack .bar.quit -side right
+
+button .bar.controls -text "Controls" -command {exec audiocontrol &}
+pack .bar.controls -side right
+
+set Status .status
+tixScrolledListBox $Status -height 100 -width 300
+$Status subwidget listbox config -setgrid true -takefocus false
+pack $Status -side top -fill both -expand true
+
+tixButtonBox .bottom
+pack .bottom -side bottom -fill x
+
+set Talkbtn .bottom.talk
+button $Talkbtn -text "Disconnected" -state disabled
+pack $Talkbtn -side bottom -fill x -expand true
+
+ShowStatus "Enabling speaker..." 
+set Speaker [open "| sfspeaker -v |& cat" "r+"]
+fileevent $Speaker readable ShowSpeaker
+
+---------------------------------------------------------------

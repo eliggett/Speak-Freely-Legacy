@@ -1,0 +1,119 @@
+.TH "SFLWL" 1 "7 NOV 1995"
+.UC 4
+.SH NAME
+sflwl \- Query Speak Freely Look Who's Listening client
+.SH SYNOPSIS
+.nh
+.na
+.B sflwl
+[
+.B  \-cdlmu
+]
+'in +5n
+[
+.BI \-h host[:port]
+]
+.I [*]user_name ...
+.in -5n
+.hy
+.ad
+.SH DESCRIPTION
+.B sflwl
+is a client program which requests contact information from a
+server running the Speak Freely Look Who's Listening server
+.RB ( sflwld ).
+.B sflwl
+allows users to find one another and establish Speak Freely conversations
+even if one or both have dial-up Internet connections where the host name
+and Internet address vary from session to session.
+.PP
+Each
+.I user_name
+is matched against the E-mail address and full user name of
+active users who have informed the Look Who's Listening site of
+their presence.  If the
+.I user_name
+occurs within either of these fields, the IP address and port
+on which matching users are listening are listed.  Options allow
+different forms of output.
+.PP
+If the
+.I user_name
+is preceded by an asterisk (*), only exact matches with the
+user's E-mail address are reported.
+.SH OPTIONS
+.TP 10
+.B \-c
+Output consists of the command line options for
+.B sfspeaker
+to connect to the matching user(s).  For example, if you want to
+connect to a dial-up user whose E-mail address is
+.BR smudley@internut.com ,
+you can use the command:
+.ce 1
+.B sfmike \-t `sflwl \-c smudley@internut.com`
+to connect to that person, as long as he's currently connected
+to an Internet service provider and running Speak Freely,
+even you don't know the site name or IP address he's been assigned
+for the current session.
+.TP
+.B \-d
+Enables debug output.
+.TP
+.BI \-h host:port
+The query is sent to the named host (and optional port number, in
+case the host doesn't use the standard port, 2076).  The
+.B \-h
+option overrides any host and port specified by the
+.B SPEAKFREE_LWL_ASK
+and/or
+.B SPEAKFREE_LWL_TELL
+variables.
+.TP
+.B \-l
+The list of hosts which matched the
+.I user_name
+is shown in long form, including all information the users
+supplied to the Look Who's Listening server.
+.TP
+.B \-m
+Shows the server status message, if any.  This
+message provides information regarding the server, such as the
+World-Wide Web URL where it publishes the list of active users.
+.TP
+.B \-u
+Prints how-to-call information.
+.SH ENVIRONMENT VARIABLES
+If no host (and optional port number) is specified,
+.B sflwl
+will use the host and port specified by the
+.B SPEAKFREE_LWL_ASK
+environment variable, if defined.  If
+.B SPEAKFREE_LWL_ASK
+is not defined, the host name is taken from the
+.B SPEAKFREE_LWL_TELL
+variable used by
+.B sfspeaker
+to identify its Look Who's Listening host.
+.SH BUGS
+The number of matching items returned is limited to what will
+fit in a single 512 byte packet.  This is deliberate; users who wish
+to browse active sites should consult the HTML file published by
+the Look Who's Listening site rather than make wild-card
+requests with
+.BR sflwl .
+.SH "SEE ALSO"
+.BR sflwld (1),
+.BR sfmike (1),
+.BR sfspeaker (1)
+.PD
+.ne 4
+.SH AUTHOR
+.RS 5
+.nf
+John Walker
+WWW:	http://www.fourmilab.ch/
+.fi
+.RE
+.PP
+This program is in the public domain.

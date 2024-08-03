@@ -1,0 +1,3498 @@
+
+                        Speak Freely for Unix
+                          (formerly netfone)
+
+                           Development Log
+                            by John Walker
+                       http://www.fourmilab.ch/
+		       
+12 October 1992
+
+Five hundred years to the day after Columbus, Netfone landed in
+the new world of comp.sources.sun/volume03 as netfone.tar.Z.  The
+natives ignored it.
+
+26 August 1995
+
+John Gilmore encountered an undefined symbol irint when building on
+SunOS 4.1.3_U1.  Apparently this function, which is part of the main C
+library in 4.1.1, was moved somewhere else in 4.1.3.  To put an end of
+this irint() nonsense once and for all, I rewrote the expression in
+soundbyte.c to eliminate the call to irint() entirely.
+
+John also suggested making the distribution tar extract into a
+netfone-<version> directory as most GNU packages do.  Starting with
+release 5.1, which will extract into a netfone-5.1 directory, that's
+how it'll be.
+
+29 August 1995
+
+Added logic to mike to calculate the precise number of samples which
+will fit in a sound buffer to optimally fill a single UDP packet.
+John Gilmore pointed out that sending lots of individual packets on
+our own is actually more efficient than forcing the network driver to
+break large packets into fragments.  It also reduces the sound delay,
+since we don't have to wait for a large sound buffer to be filled
+before getting it on it's way to the other end.
+
+Note that even though mike will now never send a packet larger than
+512 bytes, speaker continues to be able to handle packets with as
+many as 8000 samples and thus remains compatible with older versions of
+mike.
+
+31 August 1995
+
+Added -d and -q switches to speaker which, if specified, override the
+debug mode specified in incoming packets.  The -d switch is
+particularly handy when you want to log every packet and don't have
+control over the sending end.  The -q switch allows running speaker in
+the background without worrying about where the output is going to go
+is somebody starts sending with debug mode on.
+
+To reduce network traffic and improve conference call performance,
+I made push-to-talk (-b) mode the default in mike.  Continuous
+transmission (unless squelched) is selected with the -a switch.
+
+1 September 1995
+
+Added ADPCM compression to mike (enabled by the -f switch) and decompression
+to speaker.  ADPCM halves the number of bytes in a packet without substantial
+degradation of voice-grade audio, far less than that of the -c switch,
+which achieves the same degree of compression.  You can specify -c
+and -f together for a 4x reduction in bandwidth, with substantial loss
+of quality.  ADPCM and GSM compression cannot be used simultaneously.
+
+ADPCM compression is provided primarily as an alternative to Simple
+(-c) compression for users with a 64 Kb connection who don't have a
+fast enough CPU to run GSM.  ADPCM is much faster on both compression and
+decompression than GSM.
+
+2 September 1995
+
+Release 5.1.
+
+15 September 1995
+
+Implemented a crude but better-than-nothing "answering machine" in
+speaker.  Specifying the "-rfile" option records all sound received
+in the named file in Sun .au format (including header).  If you
+specify "-r+file" the sound is appended to the named file if it
+exists.  As with a real answering machine with the volume turned up,
+the sound is still played.  Obviously there are a zillion nice things
+that one can immediately think of which would improve this feature,
+but at least it provides a stopgap which captures attempts to
+communicate while you were away from the machine.
+
+17 September 1995
+
+Discovered that a "quick fix" in the SGI audio input soundgrab()
+function in soundbyte.c was violating the maximum packet size for
+memory-constrained versions of WINSOCK. Fixing that was
+straightforward, but I ran squarely into a bug where we'd hang trying
+to flush queued input when transitioning to talk mode in push-to-talk.
+I added a new soundflush() function dedicated to flushing the input
+queue (however that is accomplished) and provided Sun and SGI
+implementations of this function.
+
+Lots of little changes all over to transition the package name from
+Netfone to Speak Freely for Unix.  Much more remains to be done,
+particularly separating the option sections for sfmike and sfspeaker
+in the man page.
+
+19 September 1995
+
+Finished changes to programs, Makefile, and manual page for renaming
+to Speak Freely for Unix.
+
+Version 5.2 released.
+
+20 September 1995
+
+Added time and date to the "connect" and "idle" messages produced by
+the -v option on sfspeaker.
+
+21 September 1995
+
+Installed the ability to automatically generate, encrypt with PGP, and
+transmit a session key to the receiving machine.  Since PGP is invoked
+to encrypt and decrypt the key, Speak Freely remains free of any RSA
+patent issues; the user simply obtains and installs the correct
+version of PGP and Speak Freely automatically provides public key
+support compatible with PGP.  To encrypt sound to one or more people
+with a public key, use the:
+
+    -z"user1 user2..."
+
+option on sfmike.  The user names are the same as you specify on the
+PGP command line when encrypting files.
+
+On the receiving end, when a PGP-encrypted session key is received,
+PGP is invoked to decrypt it.  Decryption requires your RSA private
+key, for which the pass phrase must be provided.  By default, PGP
+asks you for the pass phrase each time a session is initiated.  You
+can override this by specifying the pass phrase using the PGPPASS
+environment variable (see the PGP documentation for details and a
+discussion of the vulnerability this may create) or by using the
+
+    -z"Pass phrase"
+
+option on speaker.  The given pass phrase is then passed to PGP with
+its own -z option each time it is invoked.
+
+23 September 1995
+
+Sfmike didn't accept numeric IP addresses--only resolvable host names.
+Fixed to call inet_addr then only try gethostbyname() if it fails.
+
+Mike.c and speaker.c printed IP addresses the hard way.  I changed
+them to use inet_ntoa.
+
+Speaker.c failed to reload the loop variable used when searching for
+an active connection at the start of each search.  This could lead
+to segmentation faults after connections had been closed. Fixed.
+
+Connections kept around to preserve their PGP session keys caused the
+10 second timer not to be canceled after all connections have gone
+idle.  Fixed.
+
+Support for half-duplex audio devices.  If HALF_DUPLEX is defined
+at compile time, sfmike sends the copy of sfspeaker running on the
+local host a pair of fHalfDuplex messages with the fHalfDuplexMute and
+fHalfDuplexResume bits set.  On receiving a fHalfDuplexMute, sfspeaker
+closes the audio device, if open, and sets a flag which causes all
+audio input to be discarded.  When fHalfDuplexResume is received,
+audio input is enabled, to be acquired upon receipt of the next sound
+buffer.
+
+Integrated fixes from Andrey A. Chernov to allow compiling for
+FreeBSD, using its Sun-like /dev/audio device.
+
+24 September 1995
+
+First cut at IP Multicast support.  Multicast support is included only
+if IP_ADD_MEMBERSHIP is defined at compile time; we assume that it
+will be defined only on system with mrouted.  If multicast is present,
+sfspeaker recognises the "-Mhost/ip" option to indicate one or more
+Multicast groups to which it should add membership.  Sound packets
+from any of the named multicast groups as well as those sent directly
+to the bound port will be played.
+
+On the sfmike side, multicast thresholds can be specified by an
+integer after the multicast group name or IP number, delimited by a
+slash.  To transmit to a continent-wide multicast group you might use
+the command:
+
+    sfmike 230.1.217.11/128
+
+Users who fret over the security risks inherent in the PGPPASS or
+-z"Pass phrase" method of supplying the pass phrase to PGP but can't
+stand having to enter the pass phrase for every new session key now
+have a new option.  If you specify "-z" with no pass phrase on the
+call to speaker, it prompts you for the pass phrase once at the start
+of execution, then supplies that phrase to PGP for all subsequent
+connections.  Note however that the pass phrase is passed to PGP with
+its -z option, so whatever risk that creates remains present.
+
+Renamed "one-time pad" to "key file" and included a note about its
+cryptographic shortcomings in the manual page.
+
+25 September 1995
+
+More fixes from Andrey A. Chernov for FreeBSD--the include of
+sys/timeb.hin netfone.h was conditioned on "sun" not "BSD_like",
+soundflush() in soundbyte.c needed to use a read() loop and test
+EAGAIN rather than the Sun-specific FIONREAD ioctl(), and debug output
+from mike.c looks better if cbreak() mode is used rather than raw().
+
+5 October 1995
+
+Added debug mode output to sfspeaker to indicate when it's off
+calling PGP to decode a session key and whether the process
+succeeded or failed.  The long pauses were disturbing when you
+didn't know what was going on.
+
+6 October 1995
+
+Added the mellifluous new ring.au to the standard release.
+
+Feature release 5.3.
+
+15 October 1995
+
+Added the "-Pport" option to speaker.c to specify which port it
+listens on.  If specified, this overrides the INTERNET_PORT defined in
+the Makefile.
+
+Allowed specification of the port mike.c transmits to as a number
+appended to the hostname or IP address, delimited by a colon.  The
+port, if specified, must appear before any multicast scope
+specification.  Thus, a multicast address with port and scope
+specified would appear like:
+
+        227.11.133.51:5050/64
+
+5 November 1995
+
+Finished implementation of Look Who's Listening, with changes in
+speaker.c to notify the server, and new modules lwld.c (the server)
+and lwl.c (the client).  The manual pages have been split up into a
+separate page for each program.
+
+Disabled all of the RTP support except that needed for Look Who's
+Listening.  It isn't ready for prime time, and there's no reason to
+delay LWL, which everybody is screaming for, to wait for it.
+
+6 November 1995
+
+Added support for the LPC compression mode (-lpc) included in the RTP
+spec.  It's tricky to set up, since any clipping of audio drives it
+absolutely nuts, but 12-to-1 compression is worth the bother if you
+have a slow link.  You can enable -lpc and -c at the same time, but
+the result is so poor it's not worth trying.
+
+7 November 1995
+
+Added an -n option to speaker.c which causes it to ignore any ring
+requests from remote hosts.  This is for Sun users who've hooked a
+good sound system up to the audio output jack and get irritated when a
+remote ring switches it back to the built-in speaker.
+
+Feature release 5.5.
+
+19 November 1995
+
+Integrated fixes for various warning messages from GCC 2.7.0 for
+Solaris reported by Mark B. Hamby.  Two of these were legitimate bugs
+in lwl.c and lwld.c, but would actually cause a problem only in the
+extremely unlikely circumstance of malloc() failing on the allocation
+of a small buffer.  The rest were just complaints about failure to
+cast pointers to the (char *) defined for some of the socket calls.
+
+I created a new "contrib" directory for third party software that
+is not directly integrated into Speak Freely.  The first item is
+"tkshell", a Tcl/Tk/Tix interface to Speak Freely, also developed
+by Mark Hamby.
+
+Sfspeaker showed connect and idle messages even if the "-v" option
+was not present.  Fixed.
+
+Some of the cases in mike.c where a user tried to specify more than
+one of the compression modes -F, -LPC, and -T didn't exit after
+printing the error message.  This resulted in the program trying to
+actually use more than one of these modes at once, which could
+heroically mess things up.  Fixed.
+
+Added a gimmick to make it easier to reply to a host that's just
+connected to your machine, avoiding all the fumble-fingered typing or
+furious cutting and pasting.  If you specify the
+
+    -a"filename[ command ...]"
+
+option to sfspeaker, every time a new host connects, it will write
+an executable shell script that invokes sfmike to reply to the
+just-connected host.  If no command is given, "sfmike -t $* hostname"
+is used, the $* allowing the user to pass options from the call on
+the reply script to sfmike.  A custom command can be specified following
+the filename, separated by a space (be sure to quote the string in
+this case).
+
+21 November 1995
+
+Discovered bad htonl() logic in loop-back code in sfspeaker.  The
+length passed to sendto() had already been byte swapped.  Fixed.
+
+24 November 1995
+
+Made GSM (-t) compression the default in mike.c.  Far, far, too many
+people are choosing improper compression modes, so I've made GSM the
+default for both the Unix and Windows versions.  The mutually
+exclusive compression modes (ADPCM, LPC, and GSM) now simply cancel
+a previously selected mode radio-button style rather than give an
+error message.  This preserves compatibility with earlier versions
+which allowed "sfmike -f", for example, without requiring an -n
+switch to turn off GSM.
+
+Converted speaker.c from alarm() to setitimer(), allowing timer
+resolution as fine as permitted by the system clock, with
+specification in microseconds.  A wrapper called ularm() which accepts
+an argument in microseconds hides the ugliness of setitimer().  This
+will allow the rapid-fire time-based event generation needed to
+download face files from a remote server.  This, of course, required
+little fixes all over the place.
+
+Discovered that going from idle to audio output active state in
+speaker.c didn't speed up the timeout interval to the active rate
+until the next timeout occurred.  Fixed to speed up the timer at the
+moment audio output is opened.
+
+Renamed netfone.h to speakfree.h, eliminating the last vestige of the
+program's original identity.
+
+26 November 1995
+
+Fixed a format in lwld.c that caused an incorrect error message
+when the -m message file couldn't be opened.
+
+Integrated the "show your face" code to permit users to see each
+other's pictures.  A user can make a face image available by creating
+a 256 colour Microsoft .BMP format file and providing its pathname to
+sfspeaker on a SPEAKFREE_FACE environment variable.  When sound is
+received from a new host, sfspeaker sends a request for a face image
+to it.  If an image is available, is is transferred in packets at a
+rate configured by FaceFetchInterval in speakfree.h (in microseconds),
+and when complete, displayed using "xv" (which must be installed and
+accessible from the user's PATH).  Actually, as long as the two
+communicating systems are Unix, any image format displayable by xv can
+be used, but since the Windows version only knows how to display .BMP
+files, even Unix users should restrict themselves to that format.  (I
+may add code to enforce this in the future.)
+
+The somewhat radical changes in timeout logic required to support
+transmission of the face image in the background ran afoul of the
+sneaky way we were keeping timed out connections around to avoid
+forgetting their PGP session keys.  Now a con_timeout value of -1
+indicates a ghost of a former connection, not (hosttimeout + 1), which
+can't be guaranteed with variable timer resolution.  I changed the
+"Tick..." message generated when the -d option is set to show the
+current timer interval.
+
+Forking processes to view face images with xv was incrementing
+reference counts of resources inherited by the child process.  On
+Sun, this locked up the exclusive use /dev/audio file until all the
+viewer processes terminated.  I added code to release all resources
+inherited from the parent as soon as the child process receives
+control.  Audio output, if open, is unconditionally closed before
+the fork() since we don't know the nature of the resource(s) it may
+bequeath to the child process.  It will simply be reacquired when the
+next packet arrives.
+
+28 November 1995
+
+Eliminated an unreferenced variable in the HDX_DEBUG code in
+speaker.c.
+
+Changed speaker.c -d option output to show the hostname from the
+connection (obtained with gethostbyname) rather than the often
+truncated and untrustworthy hostname in the sound buffer.  If the
+hostname could not be obtained, the IP address is shown.
+
+To aid in diagnosing the problems of users who connect with
+inappropriate compression modes, I added a status message to the
+-v option output which identifies the type of compression currently
+being used by a connected host.  The message is reissued every time
+the compression mode changes.
+
+Changed the logic of the "show your face" code to make it fully
+downward compatible with earlier releases.  If SPEAKFREE_FACE is
+defined and points to a valid file, mike.c now includes a new
+fFaceOffer bit in every sound packet it sends.  speaker.c only
+requests a face from the remote host if that host's packet includes
+the fFaceOffer bit.  Since prior releases won't ever set that bit,
+there's no need to worry about them getting befuddled by receiving
+face requests they don't know how to process.
+
+30 November 1995
+
+Integrated a fix from Hans Werner Strube which corrects the problem
+sending sound files on Solaris.  Due to confusion resulting from the
+change-over from the BSD ftime() function which returns time as
+seconds and milliseconds to the System V gettimeofday() which returns
+seconds and microseconds, the delays computed to wait for the
+transmission of sound buffers were 1000 times too long, resulting in a
+long pause between each packet.  Fixed.
+
+Increased the default host timeout from 1 to 3 minutes.  Connections
+would frequently time out during long rants by the local user,
+requiring retransmission of the face file.  This should ameliorate
+the problem for the time being, pending a longer-term fix based
+on RTP BYE packet handshaking.
+
+1 December 1995
+
+Integrated a Solaris fix from Hans Werner Strube into mike.c and
+soundbyte.c which sets the audio input buffer to the actual packet
+size currently in use.  This reduces the delay compared to the
+previous fixed packet size of 4000 samples.  The actual buffer size
+may be rounded down to the nearest multiple of 16 on machines which
+use the DBRI device.
+
+Feature release 5.6.
+
+2 December 1995
+
+Added a fix for FreeBSD from Andrey A. Chernov to add a required
+library to the FreeBSD link command.  His other fix, to comment out
+the compiler-busting warning in RTPOUT.C since GCC requires correct
+syntax even in #ifdef disabled code was already in 5.6, thanks to GCC
+users on Solaris who encountered the same problem.
+
+4 December 1995
+
+Hans Werner Strube supplied another Solaris / System V fix required
+for the viewerterm() function in speaker.c.  The wait3() function
+present in BSD and SGI IRIX is supplanted by waitpid() in System V. As
+integrated, waitpid() is currently used only on Solaris.  When I get
+time to do more testing, I may change the code to use it
+unconditionally, as even SunOS 4.1.1 seems to implement it.
+
+5 December 1995
+
+Our clever decision to not initialise the socket until after
+processing the command line options in speaker.c (so that -u works
+even if another copy of sfspeaker is running) ran afoul of the need
+for the -M option (possibly several -M options) to have the socket
+initialised in order to add multicast group memberships.  I moved the
+socket initialisation back to before the option processing loop.
+(Reported by Robert Kaempf).
+
+Added a first-pass option processing loop before the socket is
+initialised to restore the ability to use -u when another copy of
+sfspeaker is running and, more importantly, allow the -p option to
+change the port number before the socket is bound.
+
+8 December 1995
+
+Andrey A. Chernov discovered that lwl.c and lwld.c still contained
+numerous assumptions about both byte order and the layout of bit
+fields (used in the header of the RTP- compatible packets those
+programs exchange).  I installed the bit-twiddling version of the
+packet processing from the Windows version, leaving in the original
+code, disabled with #ifdef RationalWorld, since it documents what
+we're trying to accomplish a lot more clearly.  The fixed code works
+fine on big-endian machines, but I haven't been able to test it on a
+little-endian myself, so it's probable I may have missed one or more
+additional fixes that may be required.
+
+Given the generally ratty state of sflwl (runs for a week without
+a hitch, then crashes 3 times in one day for no apparent reason),
+I added a bunch of new debug output when the -v option is selected
+including logging of all requests to the server.  Maybe this will
+provide some clues as to what's going on.
+
+9 December 1995
+
+Integrated fixes to the Makefile and soundbyte.c which enable the
+program to build and run on Linux.
+
+19 December 1995
+
+Well, the earlier fixes to lwl.c and lwld.c improved (or at least
+changed) the results of trying to run sflwl on FreeBSD, but it still
+doesn't work right.  Still flying blind, I took another close look at
+lwl.c and lwld.c and found two places in each where, under certain
+circumstances, a compiler treating "char" as signed might lead to
+trouble.  I added defensive ANDs with 0xFF in both cases.  We'll see
+if that does it.
+
+Found one more little-endian problem in lwl.c--this time it was a
+reference to a bit field in the RTP packet which caused sflwl to
+mis-count the number of items returned from sflwld.  Fixed.
+
+While sflwld detected packet overflow and flagged it to the
+requestor, it didn't actually stop filling the packet.  Fixed.
+
+Including sys/wait.h pulled in signal.h before _BSD_SIGNALS was
+defined on the SGI, leading to naughty System V-like behaviour
+complete with sflwld crashing with "Alarm clock" since it failed
+to re-enable SIGALRM in release().  For good measure (and to
+preempt other System V problems), I both defined _BSD_SIGNALS at the
+top of the includes and included a re-enable of SIGALRM in release().
+
+Distinguished the new debug output added yesterday from the regular
+sysadmin-level logging by enabling the former by the "-vv" option
+(very verbose) and the latter by "-v".  Detailed output (-vv)
+always enables the regular verbose messages.
+
+Integrated the first-cut Hewlett-Packard audio driver code submitted
+by Marc Kilian.  Marc notes that this code has not been extensively
+tested.  It's up to you, HP workstation users, to wring this out and
+bring HP into the list of fully-supported platforms.  You can enable
+debug output by uncommenting the #define HP_DEBUG at the top of
+hp_audio.c.
+
+20 December 1995
+
+Fixed a few more byte-order and bitfield problems, this time in
+rtpout.c.
+
+Added some additional information to the "very verbose" trace from
+sflwld when -vv is specified, including the SDES of any SDES or
+BYE packet and the 4 letter code of APP messages.
+
+21 December 1995
+
+Oops--missed a FreeBSD fix in the Makefile.  It's in there now.
+
+As suggested by John Deters, I added an explicit "+armor=off"
+specification to the command lines used to invoke PGP in mike.c and
+speaker.c.  Our use of PGP to exchange a random session key requires
+PGP to produce a binary output file, not an ASCII armoured one, as it
+usually does unless the "a" option is specified.  The user can,
+however, make ASCII armour the default by setting the "Armor=on"
+option in the config.txt file; doing so caused Speak Freely's use of
+PGP to fail.  Configuring armor off on the command line overrides the
+config.txt specification and prevents this problem.
+
+27 December 1995
+
+Edward Olszewski reported that the "cc" compiler on HPUX 9.05 (HP 9000
+735/125) (like SunOS cc) couldn't handle the "const" modifier in the
+argument declarations in md5/md5.c.  To avoid an ever-growing
+exception list, I just removed the "const".  It won't make any
+difference in operation.
+
+In addition, random() (referenced in lpc/lpc.c) was undefined in the
+link.  I modified lpc.c to enable the emulation of random() with
+lrand48 for HEWLETT_PACKARD as well as Solaris.
+
+31 December 1995
+
+On some systems (Silicon Graphics, for instance) if the sfspeaker
+timer happens to expire while we're waiting for the fread() from
+the PGP session key decode pipe to complete (this usually happens
+when it takes the user longer to enter the secret key pass phrase 
+than the interval to the next timer tick), the fread() can return
+with zero bytes read and errno set to EINTR (Interrupted system call).
+I modified to the logic that reads from the PGP decode pipe in
+speaker.c to detect this condition and re-issue the fread() until
+it either succeeds or fails with a status other than EINTR.
+
+4 January 1996
+
+Finished first cut of sfecho (echo.c), a remote echo server intended
+to allow users, even those with half-duplex audio hardware, to perform
+remote "sound checks" of various compression and encryption modes
+without the need for an individual on the other end to evaluate sound
+quality.  The server simply time stamps sound packets as they arrive,
+then sends them back to the originating address ten seconds later.
+No audio I/O is performed, so the echo server can be run on a machine
+without audio capability.
+
+5 January 1996
+
+The microsecond-resolution packet timing in echo.c will overflow a
+long and go negative in less than an hour.  The way the code was
+structured, this actually didn't cause any trouble unless a packet
+happened to be queued right at the time the wrap-around caused the
+sign to change.  I modified the code to use a double for the packet
+time to make sure there's no wrap-around.
+
+I changed the logic in makeSessionKey() in echo.c to use only MD5, not
+idearand(), to construct the RTP SDES sent to the LWL server.  Since
+there's no other reason to include IDEA in sfecho, eliminating this
+one reference gets rid of the whole IDEA patent disclaimer on the
+sfecho.1 manual page.
+
+The logic in echo.c is perfectly capable of supporting a face image
+file for the echo server, for which I was originally planning to use
+an image of a statue of the Greek goddess Echo.  Well, not only
+haven't I been able to locate such an image, on reflection (hee, hee)
+I've decided that giving the echo server a face is a bad idea,
+especially for a widely-used public server running on a line with
+limited bandwidth.  It would be very easy for the volume of face data
+sent to all accessors to dwarf the sound packet bandwidth, inducing
+pauses and lost data that gave echo server users a false impression of
+the actual response.  Not being one to ever actually delete working
+code, I turned off the echo face capability with #ifdefs on ECHO_FACE
+so it can be restored if future events prove that to be wise.
+
+8 January 1996
+
+The echo server program, echo.c, inherited logic from speaker.c to
+disable publication of its identity on the SPEAKFREE_LWL_TELL server
+if a connection is refused.  This is intended to keep machines which
+once ran an LWL server but don't any more from being repeatedly
+bombarded with LWL packets.  Unfortunately, this means that if an LWL
+server is momentarily out of service, the echo server will disappear
+from the LWL directory until it restarts the next time; this is bad.
+So, I removed the disabling due to connection refused in echo.c,
+trusting the administrator of an echo server to be responsible enough
+to respond to the repeated warning messages for refused connections
+when an LWL server is genuinely rather than transiently down.
+
+In an attempt to fix the sporadic "broken pipe" crashes of the sflwld
+server (every three or four days on the SGI, typically), I'm
+proceeding on the hypothesis that this happens when a user submits a
+request and then shuts down (or crashes) before we write the reply
+back to the socket.  (I have not, however, even with a deliberately
+broken version of sflwl, been able to make this happen.)  Anyway, I
+added a SIGPIPE signal catcher which ignores the signal (at the
+moment, printing a message when this happens).  This should allow the
+send() to return and the connection to be closed normally.  There's
+nothing else we can do about it anyway.
+
+10 January 1996
+
+The critical section locking code in echo.c wasn't entirely
+bulletproof against a host timeout occurring while processing a sound
+packet from that host, or while scanning the connection chain and/or
+making an entry for a new host.  I revised the logic to include all
+references to the connection chain as well as the queued packet list
+within the critical section that blocks the timer interrupt.  In
+addition, I revised the detection of host timeouts and LWL
+retransmissions in release() to be based on absolute time rather than
+a countdown timeout.  This permits release() to be called at any time
+whatsoever without worrying about whether the proper timeout interval
+has elapsed and, hence, to be called whenever the critical section
+lock is released if the timeout has expired while the lock was set.
+This timeout logic is a lot cleaner and deserves to be integrated into
+speaker.c once it's proven in the more demanding environment (due to
+rapid-fire packet timing interrupts) of echo.c.
+
+21 January 1996
+
+Added a hexadecimal dump (-x) option to sfspeaker if it's
+compiled with HEXDUMP defined.  One more little tool to help
+debug RTP and VAT support.
+
+Found a place in speaker.c's LPC decompression function 
+lpcdecomp() where an ntohl() was needed in extracting the
+decompressed length of the message.
+
+28 January 1996
+
+Staked another bloodsucking byte-order dependency in lpccomp() in
+mike.c.
+
+Added a reality-check in playbuffer() in speaker.c which discards
+packets with a buffer.buffer_len field longer than the actual packet
+read from the socket.  This prevents embarrassing blasts of noise or
+worse if we receive a garbage packet due to improper protocol
+recognition or an incorrect encryption key on an RTP or VAT
+connection.
+
+Playbuffer() in speaker.c made a redundant test on showhosts.  Fixed.
+
+Added monitoring of the control port (data port + 1) to speaker.c to
+recognise VAT and RTP connections.  A new con_protocol field in the
+connection structure indicates the protocol of the connection.  The
+reply command will now contain the sfmike appropriate option to send
+in the protocol we're receiving.
+
+29 January 1996
+
+Integrated a decode-only version of Dave Hawkes' VOX compression mode.
+I'm not close to being able to make the compressor available, but at
+least this this code in place, Unix users can receive packets sent by
+the Windows version with this compression mode.  All the encoding
+logic is present in the module VOX.C, but disabled pending
+integration.
+
+Made innumerable fixes in the VAT and RTP support code and associated
+packet translators.  For the moment, everything is pretty much working
+except for LPC; neither NEVOT nor VAT seem to be able to talk to one
+another in LPC mode so I'm not sure the problem is of my making.  GSM
+and all the other common modes work fine.  It's a little odd that VAT
+ID and RTP SDES packets are sent by sfmike as well as sfspeaker; to be
+marked as a participant in a conference you have to run sfmike with
+its ID (though you do not have to actually transmit anything).  I may
+change this, but for the moment getting this logic into the Windows
+version (which does not share our schizophrenic view of connections)
+is a much higher priority.
+
+31 January 1996
+
+The "plumber()" code in lwld.c that catches SIGPIPE signals when a
+remote user disconnects while we're tring to send the reply to a query
+seems to be working well.  So, to tempt fate, I disabled the log
+message when we recover from a SIGPIPE.
+
+After struggling 2 days trying to figure out why I could receive
+LPC-encoded sound just fine from VAT, and send it to myself with no
+trouble in LPC format, but was unable to send LPC sound to VAT, I
+decided to download a newer VAT.  I got the 4.0a2 alpha release, and
+no trouble with LPC in either direction.  I guess it just didn't work
+in earlier versions of VAT.
+
+To avoid confusing those familiar with VAT, mike.c now parses
+destinations in any of the following formats:
+
+    hostname
+    hostname:port
+    hostname/port
+    hostname:port/ttl
+    hostname/port/ttl
+
+Integrated DES encryption code into the VAT and RTP output handlers
+in mike.c.  Like everything else in the funhouse of VAT and RTP,
+results are mixed.  Clearly VAT and I agree on key generation, since
+the sound I send is played OK, but with ticking between each
+packet in GSM mode, indicating VAT doesn't handle the padding of
+packets to 8 bytes correctly.  Well, thank goodness RTP introduced
+the "P" flag!  But NEVOT doesn't seem to recognise any DES encrypted
+inbound packets in RTP mode!  So, let's try the new VAT--uhhhh, it
+appears they've totally pulled DES support from it due to "export
+control" restrictions.  Gosh this is fun.
+
+1 February 1996
+
+After several more hours of psychoanalysis of the RTP spec and
+examination of the VAT and RTP source code, DES encryption of RTP
+packets works in both directions when I test with NeVoT 3.32.  I can't
+test RTP encryption with VAT 4.0.a2 alpha since they've disabled
+encryption due to ITAR fears.  At present, I assume that if RTP
+encryption is enabled, both control and data packets will be
+encrypted, and this is how NeVoT behaves.  RTP allows RTCP control
+channel packets to be either encrypted or in the clear--you're
+supposed to detect a clear packet by verifying that it meets 
+rather easy-to-spoof consistency conditions.  This gives me the
+willies; I'll defer such "heuristics" until things settle out more in
+RTP land.
+
+With even more hacking, I can now talk to NeVoT in RTP mode both
+directions with DES encryption, more or less.  The less is that for
+some reason ADPCM picks up noise and, of course, LPC doesn't work
+right (but it never did, even without DES).  VAT doesn't pad packets
+when encrypting, and I haven't guess the golden rule that governs how
+the packet is initialised when it is encrypted.  (Hint: it isn't
+zeroed--I tried that.)
+
+Integrated a fix from Paul Eggert for Solaris 2.5 in mike.c.  In
+Solaris 2.5 gettimeofday() is required to have two arguments--you have
+to pass an explicit NULL if you don't want the time zone information.
+Both references that failed to supply the NULL now do.
+
+Removed the terminal protocol dependent modules from libdes.a to avoid
+nugatory incompatibilities in ports.
+
+2 February 1996
+
+Modified rtp_make_sdes() and rtp_make_bye() in rtpacket.c to
+optionally create a composite RTCP packet with a void Receiver Report
+at the start if called with a new "strict" argument TRUE.  The RTP
+spec requires an RTCP packet to always begin with a (possibly void) SR
+or RR.  Why make it optional?  I had missed this little twist when I
+implemented lwld.c, and though I'll fix lwld.c to accept packets in
+this format, existing servers won't understand them until they install
+the updated version.  So, we'll go on sending the old format to LWL
+servers for a while.
+
+"Just in case", I deleted the private items used only by the LWL
+server from the SDES packet if strict is set.  They're perfectly
+legal but, you know....
+
+Added unconditional padding of the whole packet to a multiple of 8
+bytes in rtp_make_sdes() and rtp_make_bye().  Later on, we may want to
+encrypt these packets, and it's a lot easier to pad them at generation
+time when we understand the composite nature of the packets than at
+encryption time, when we'd prefer to treat them as a black box.
+Padding is done only for strict calls, for the same reasons given
+above.
+
+If strict is set rtp_make_sdes() now deletes the leading asterisk (if
+present) from the RTCP_SDES_CNAME and RTCP_SDES_EMAIL which servers
+only to inform an LWL server that the user permits exact matches only
+of his E-mail address and doesn't wish to be listed in the HTML
+directory.  The asterisks could confuse an RTP client, so we don't
+send 'em.
+
+Modified lwld.c so it understands packets which comply with the RTP
+requirement that all RTCP packets begin with an SR or RR packet.  In
+the future, once all the servers are running this version, we'll be
+able to use the same SDES packet for the LWL server and to send to RTP
+connections.  I also verified that lwld.c works even if the packet it
+receives contains padding.  Note that only the first eligible RTCP
+message in a packet is processed--If you stack multiple requests in
+one packet, only the first will be processed.
+
+Fixed a raft of byte order and bit field order independence problems
+in rtpacket.c; isrtp() (this had never had the RationalWorld treatment
+applied to it, since it didn't make sense to uglify it before it was
+even working).  I also added logic to skip a header extension, if
+present.  Since none of the tools I have to test with ever includes a
+header extension, I can't be absolutely sure I've got this right.
+
+Added a new isValidRTCPpacket() function to rtpacket.c, based on the
+validation technique suggested in the RTP spec.  This is now called
+in speaker.c for two purposes.  First, the protocol of a connection is
+set to RTP only when a valid RTCP message is received rather than for
+any control message with a version of 2.  This makes it much less
+likely the protocol will get set to RTP accidentally by an encrypted
+VAT control message that we don't have the key to properly decode.
+Second, if a DES key is supplied and we receive a message on the
+control channel which passes all the tests for RTCP validity as
+received, we don't decrypt it.  This allows RTP programs to either
+send control messages in the clear or encrypt them; both behaviours
+are permitted by the RTP spec.
+
+Fixed mike.c to encrypt RTCP BYE and VAT DONE packets when encryption
+is enabled.  NeVoT accepts the encrypted packets with no difficulty.
+
+Moved the generation of VAT DONE packets from in-line code in mike.c
+to a new makevatdone() function in vatpkt.c both for purity of essence
+and to make it easier to move the code to Windows.
+
+Fixed an oddity that caused VAT 4 not to recognise a DONE packet in
+the form that was sent by VAT 3.  I copied the VAT 3 packet, but
+apparently it had garbage bits in the flags field that VAT 4 didn't
+like.  I zeroed the flags field and all was well.
+
+Modified makeVATid() in vatpkt.c to take the E-mail address from the
+SPEAKFREE_ID variable if no SPEAKFREE_CNAME is specified.  If neither
+is present, an ID is made up from the password file information as
+before.
+
+Fixed makeVATid() in vatpkt.c to delete leading asterisks on the
+SPEAKFREE_CNAME and SPEAKFREE_ID E-mail addresses just like rtpacket.c
+does.
+
+Added logic in mike.c and rtpacket.c to set the marker (M) bit in the
+RTP packet header for the first packet of a "talk spurt".  This
+conforms to the behaviour of VAT 4 in RTP mode.
+
+Added documentation of the -rtp and -vat options to the sfmike.1
+manual page.
+
+Implemented a major revision of the "squelch" (a.k.a. VOX) code in
+mike.c.  While still nothing close to as nifty as Dave Hawkes' VOX
+code in the Windows version, this is a great improvement over the
+pathetic attempt at VOX that preceded it.  This version tests the
+maximum energy in a packet in the linear domain, not the logarithmic
+(which, notwithstanding psychoacoustics, our users understand much
+more clearly), and allows you to specify as a second comma-separated
+argument to the -s option, the time in milliseconds transmission
+should continue before muting transmission.  In addition, the push to
+talk console display now shows "Quiet:" when Talk mode is enabled and
+output is squelched.
+
+3 February 1996
+
+Added the capability to echo VAT and RTP packets to sfecho.  This
+involved having echo.c monitor both control and data sockets as
+sfspeaker does, and return packets received to the same port from
+which they originated.  The (soon to be remedied) potential ambiguity
+between Speak Freely and VAT packets means uncompressed VAT packets
+can be mistaken for Speak Freely sound buffers.  We only consider a
+packet as VAT if we've previously received a message on the control
+port from this connection, and if it is in an audio format we know VAT
+to use.  Note that mistaking the format of a packet only affects the
+log messages generated when the -v option is on; since packets are
+bodily returned to the originator without examining their content, the
+actual echo process does not require recognition of packet format,
+
+Handling VAT and RTP packets without peeking inside made it impossible
+to maintain the (already disabled for other good reasons) echo
+server's ability to show a face file.  I ripped out all the code for
+that potential but ill-considered feature.
+
+To avoid potential confusion between Speak Freely sound buffers and
+VAT packets, I modified packet generation code everywhere to always
+set the new fProtocol (0x40000000) bit in the compression field of
+every sound buffer we send.  This won't interfere with older versions
+of Speak Freely, but will keep VAT compatible programs from attempting
+to interpret Speak Freely packets as VAT format.  (The protocol flag
+turns into a VAT/RTP P value of 1, which was used by the now-obsolete
+first draft of RTP. We should never see it sent by a current program.)
+Once all versions of Speak Freely are sending the fProtocol bit, we'll
+be able to increase our own level of discrimination between VAT and
+Speak Freely packets.
+
+Implemented another major turn of the screw to avoid spoofing by
+improperly decrypted packets.  RTP and VAT sound packets are now
+accepted only if the session ID (conference ID for VAT, SSRC for
+RTP) received in the last control message for this protocol agrees
+with that contained in the sound packet.  This makes it vastly less
+likely we'll be fooled again by a Speak Freely sound buffer after a
+protocol change or a message we can't decrypt.
+
+To avoid incorrectly decrypted VAT and RTP packets from being
+interpreted as Speak Freely sound buffers, I added a check in
+speaker.c that verifies the length in the buffer.buffer_len field
+against the actual length of the packet read from the socket (this
+must take into account the padding to a multiple of 8 bytes which
+occurs if DES, IDEA, or PGP encryption is indicated by the flags in
+the header).  This is a pretty good test for validity, since the odds
+of 4 encrypted bytes precisely equalling the received packet length
+are very slim.  If a bogus packet is detected, it is ignored and the
+protocol for the connection reset to PROTOCOL_UNKNOWN, which allows us
+to restart protocol recognition.  This, in turn, permits us to
+identify unencrypted Speak Freely sound buffers which may arrive,
+unless we're reset to VAT or RTP modes by the subsequent arrival of a
+packet on the control port.
+
+4 February 1996
+
+The code which inserts a 4 random bytes before an RTCP message that's
+being encrypted in sendrtpctrl() in mike.c was broken, and didn't test
+whether the message was VAT (which doesn't have the random prefix) or
+RTP.  Fixed.
+
+In the process of testing the above fix, I discovered that the
+generation of SDES and BYE packets in rtpacket.c must actually pad
+packets to an *odd* multiple of 4 bytes.  Why?  Because the length
+of the block to be encrypted needs to be a multiple of 8 bytes, and
+that includes the 4 byte random prefix.  So the original packet needs
+to be an odd multiple of 4.
+
+Just a note in passing: the DES encryption used with VAT and RTP is
+standard DES including the initial and final permutations which Speak
+Freely dispenses with in its own modified DES.  This slows down the
+encryption and decryption process quite a bit (which is precisely what
+it's intended to do, of course), but we have no choice since that's
+what the RTP spec and VAT software require.
+
+Padding of RTP sound packets when encrypting with DES was wrong.
+Fixed.
+
+Shuffling the pad byte to the end of the frame for LPC compressed
+sound in rtpout() (rtpacket.c) wasn't quite right.  Fixed.  While I
+was at it, I modified isrtp() to do the inverse byte shuffle rather
+than call lpc_analyze() to decompress the sound.  This also fixes
+sfspeaker's identifying LPC compressed sound in an RTP packet as
+"uncompressed".
+
+Replaced the hokey random prefix generation for DES encrypted RTCP
+packets used by sendrtpctrl() in mike.c with a proper set of random
+bytes derived from the same MD5 source used for the SSRC, timestamp,
+and sequence number fields.
+
+6.0-Alpha 1 prerelease.
+
+5 February 1996
+
+Installed fixes for three problems reported by Jay Novello when
+building on Solaris 2.4 with gcc.  Two places in rtpacket.c I stored
+an unsigned value > 127 into a char.  Gcc natters at this, so I
+changed the variable in question into an unsigned char.  Let's see
+what natters this sets off elsewhere (on SunOS and SGI it compiles
+cleanly).  Second, in soundbyte.c, the same apparent incompatibility
+between stdlib.h and math.h that surfaced on SGI seems to afflict
+Solaris/gcc as well.  I commented out the #include of math.h and
+verified that doing so didn't break anything on SunOS.
+
+Added receive-only support for RTP PCMA (payload type 8) packets.  The
+A-law samples are translated into mu-law samples one for one.  I
+haven't been able to test this since I haven't yet found a program
+which sends PCMA. There's no reason to support sending in this format,
+as minimum compliance with RFC 1890 requires support of PCMU (payload
+type 0), and there is no RTP channel capable of transmitting PCMA
+which cannot equally well transmit PCMU.  Adding PCMA inbound support
+checks off another RTP payload type which we may increasingly
+encounter as ISDN telephony begins to interact with the Internet.
+
+9 February 1996
+
+The code in speaker.c that initialises the con_session field
+in the connection structure thought it was 8 bytes instead of
+4.  Fixed.
+
+System V's ever-so-clever trick of blowing off pending system calls
+with an EINTR status when even a timer signal occurs caused horrors in
+in mike.c's sendfile() of which even Billy Boy would have been proud.
+The read (Pause mode) or poll (Talk mode) of standard input to see if
+we should toggle transmit can return not only when a character is
+available, but also when the timer pops.  Testing for -1 status
+doesn't work on BSD because there you get a -1 with a WOULDBLOCK errno
+when no character is available.  On System V, that case returns 0
+characters read and no error.  So, we have to test for a return status
+of -1 and errno == EINTR to decide we should retry the read.  A
+similar condition in the initial read to transition into Talk mode
+required wrapping that read in a loop which is broken only on
+non-EINTR conditions.  This fixes the "jumps into Talk mode even when
+I didn't press a key" and "sends a blip of sound every 7 seconds even
+when I'm in Quiet" bugs.
+
+10 February 1996
+
+Ripped out some obsolete code in isvat.c that tried to discriminate
+VAT packets from Speak Freely packets by checking the consistency of
+the Speak Freely header.  With the determination of the protocol based
+on control channel messages and verification of the session ID in the
+packet, this is no longer necessary.
+
+Integrated some fixes to isvat.c from the Windows version which may
+avoid warnings on Unix compilers pickier than those I use.
+
+Isvat() and isrtp() used to look at information in the connection
+structure when processing the packet, but no longer do.  I removed the
+unused connection argument, which makes the functions more portable
+between the Unix and Windows versions.
+
+12 February 1996
+
+I decided to tackle the problems of the LPC decoder head-on.  First of
+all, I started with the version of LPC.C from the latest VAT source;
+this version has been modified so the decoder state is kept in a
+separate structure so multiple simultaneous streams don't confuse the
+decoder.  I further modified it to dynamically allocate the large
+static and automatic arrays used in the coder and decoder; new
+functions lpc_start() and lpc_end() allocate and release the work
+buffer, respectively.  The main rationale for this is that it's
+necessary to keep these arrays out of the 64K data segment on 16 bit
+Windows, and doing it here as well minimises differences in the code
+and costs nothing.
+
+To try to nail down the divide by zero and DOMAIN ERROR in sqrt()
+problems, I ran various tests using standard audio test files.  First
+I discovered that absolute silence (rarely encountered with a real
+microphone but common in edited sound files) could cause durbin() in
+lpc.c to divide by zero.  I added code to detect the incipient divide
+by zero and return a zero gain value.  This fixes the problem where
+true silence was rendered as hiss.  I also discovered that in certain
+circumstances (probably due to roundoff of floats) the gain can go
+negative by a tiny epsilon, but all it takes to make sqrt() report a
+DOMAIN ERROR.  I added a test for negative gain and zero the value
+before the square root is taken.  Both of these changes are enabled
+only if SILENCEFIX is defined, which it is by default.
+
+Given the horrors which LPC encoding results in when driven into
+clipping, I added a new definition, GAIN_ADJUST, set to 0.9 by
+default, which is used to scale the linearised samples before
+processing.  Given that many users set their mike very hot, counting
+on the other coders not to mind an occasional clip, this has the
+effect of reducing the gain when encoding in LPC and avoids some of
+the worst clipping.  Given that sound perception is logarithmic, I
+don't think the difference will be very perceptible.
+
+13 February 1996
+
+ADPCM packets sent by sfmike in RTP protocol sounded ratty due to an
+error in the calculation of RTP packet length in rtpacket.c's rtpout()
+function which accidentally truncated the last two samples in the
+packet.  Fixed.
+
+14 February 1996
+
+Added an RFC 1890 string-to-key mapping for DES encryption of RTP
+packets.  The code was borrowed from a routine in NeVoT's netutil
+directory.  Both mike.c and speaker.c call the new routine in deskey.c
+to generate RTP encryption keys.  This new code recognises RFC 1890
+encryption algorithm specifications, but only DES-CBC is accepted; any
+other encryption mode exits with an error message.
+
+To avoid protocol spoofing, I added code to reset the connection's
+receive protocol to PROTOCOL_UNKNOWN when an RTP or VAT BYE/DONE
+message is received and when any connection times out.  If the -v
+option is set, RTP and VAT bye message are now logged with a
+"connection closed" message.
+
+My code that zeroes the pad at the end of an RTP or VAT encrypted
+buffer was a little too clever--it cleared the length of the pad as
+well as the pad bytes!  Fixed in speaker.c.
+
+Since VAT and RTP have different conventions for converting key
+strings to DES keys, I had to separate the VAT and RTP keys into
+separate buffers.  This causes no trouble in mike.c, but it really
+bollixes up automatic protocol sensing in speaker.c.  I added logic
+which uses the correct key as long as the protocol is known.  If the
+protocol is unknown or we've received an indecipherable packet, we try
+the RTP and VAT keys on alternate control channel messages until we
+successfully crack a packet.  Since any protocol error resets the
+protocol to unknown, this should us to home in on the protocol
+relatively quickly.
+
+Added a general purpose RTCP SDES parser, parseSDES(), to rtpacket.c
+and placed the definitions for the structures it uses in the new file
+rtpacket.h.
+
+If the "-v" option is specified, sfspeaker now shows the user name and
+E-mail address (if available) from the identity packets received on
+the control port.  The user information is updated every time it
+changes.  The code does not currently handle packets with multiple
+sources--only the first source in the packet is returned.
+
+VAT prefers the user's long name from the password file for its
+identity packets.  I modified makeVATid() in vatpkt.c to behave the
+same way.
+
+I increased the packet lengths for RTP and VAT protocols to the
+largest sizes within both the RTP/VAT experience base and the
+the 512 byte Windows packet constraint.
+
+Integrated a couple of byte order fixes discovered in the Windows
+version into isrtp() (rtpacket.c) and isvat() (vatpkt.c).
+
+15 February 1996
+
+Added another little tweak to automatic protocol recognition of
+encrypted control messages in speaker.c which should speed the
+transition on a Speak Freely to RTP or VAT protocol change.
+
+16 February 1996
+
+Added code in mike.c and speaker.c and modified functions
+isValidRTCPpacket(), isRTCPByepacket(), and parseSDES() in rtpacket.c
+to support Speak Freely session control messages.  The messages sent
+and received are identical to RTP SDES packets, except the protocol is
+set to 1 to indicate Speak Freely.  Speak Freely never encrypts its
+session control messages, so the existing check for an unencrypted
+control messages takes care of this condition.
+
+Oops--forgot to enable the periodic re-send of the SDES item if
+the procotol selected is Speak Freely.  Fixed.
+
+22 February 1996
+
+6.0-Alpha 2 prerelease.
+
+23 February 1996
+
+Some people ran into library incompatibilities compiling files in
+libdes which aren't actually used by Speak Freely.  I made a
+Makefile.sf which builds only the files we need, and tweaked the
+libdes/des.h file to not define crypt(), which conflicted with the
+definition in unistd.h.
+
+25 February 1996
+
+Added logic to echo.c to recognise RTCP BYE and VAT DONE packets and
+mark the connection closed without retransmitting the packet to the
+other end.  This fixes the problem where a user closes a connection to
+the echo server, only to have it pop back open when his own BYE packet
+comes back.  (Yes, it seems dumb to open a connection upon receipt of
+a BYE packet, but it is very easy for an encrypted RTP SDES message to
+look like a VAT DONE, so we have to allow an apparent VAT DONE to open
+a connection.  Sigh.)  Note that this will not work if the user is
+sending encrypted RTP or VAT packets to the echo server.  Receipt of a
+BYE causes the host to go idle on the next timer tick without waiting
+for the usual inactivity timeout.
+
+Lazarus echo connections could also result if packets remained in the
+retransmission queue for a given host at the time we receive a BYE
+message from it.  I added code in echo.c to discard any packets queued
+to a host at the time it disconnects.
+
+Modified debug output from sfecho to use a slash between the IP
+address and port number, as is becoming the usual convention.
+
+Finished "sfvod", the "voice on demand" server.  Actually, this is
+just a hack in Perl which monitors a port pair and, at each new
+connection, forks a process which sends one or more sound files or
+live audio to the connected site with sfmike.  If the site disconnects
+before the transmission is done, sfvod detects this and kills the
+sfmike process.  You can write a log in NCSA HTTPD format of all
+requests processed by the server.  You can run as many copies of sfvod
+as you like, each monitoring a different port, to allow users to
+retrieve different audio available on a host.
+
+6.0-Alpha 3 prerelease.
+
+26 February 1996
+
+Once again, it's demonstrated that not even the simplest program can
+esape the wiles of BSD and System V co-consipiring to pump it full of
+arcana.  Today's victime du jour is sfvod, which encountered the
+following problems on System V. First of all, its socket recv() call
+was getting nailed by System V's favourite trick, the EINTR error
+return when the timer signal arrives.  Further, Jay Novello reported
+that on Solaris 2.4 he was getting an error return from the socket at
+the end of each connection with an ECHILD status.  This doesn't make
+any sense according to any of the documents I have, since ECHILD isn't
+a defined return status for recv(), but I put in code to ignore that
+status as well as EINTR and silently retry the recv().  Next, the
+timer and child process reaper signal handlers were getting clobbered
+on System V because they did not re-establish the signal by
+re-assigning to the %SIG variable at the end of the interrupt service
+procedure.  Did you know that the semantics of signal handling in Perl
+depend upon whether the platform you're running is BSD or System V? I
+do now.
+
+But even that was not enough.  You see, on SunOS SOCK_DGRAM is defined
+as 2, while on IRIX it is 1, so the socket creation was failing since
+the value of 2 I used means SOCK_STREAM on IRIX.  I added an ugly hack
+to the Makefile to create an ephemeral C program which is compiled and
+run to insert the system's definitions of AF_INET and SOCK_DGRAM at
+the head of sfvod.
+
+27 February 1996
+
+Speak Freely failed to sense VAT protocol when connected to a CU-SeeMe
+reflector because Speak Freely required a user ID as received in a
+point to point VAT connection, whereas the reflector sends IDLIST
+(type 3) packets.  I modified the protocol sensing logic in speaker.c
+to accept IDLIST packets as indicating VAT protocol.
+
+The CU-SeeMe reflector's periodic status packets were confusing
+isvat() in vatpkt.c into returning invalid sound buffers.  Fixed.
+
+Added the ability to include a "conference ID" in VAT packets, but
+since nothing seems to work if you send VAT a nonzero conference ID, I
+always set it to zero at the moment.
+
+With the advent of "voice on demand", the need to be able to transmit
+pre-compressed audio has become apparent.  I added a gimmick to mike.c
+which, if a sound file is specified with the extension ".gsm", assumes
+it to be the GSM compressed output of "toast" and transmits it in GSM
+packets without any additional processing.  The fact that there is no
+overhead at all for these packets makes it crucial to set kOverhead
+right in mike.c.  It's clear I'm going to have to put in an adaptive
+auto-set mode for this tweak.
+
+28 February 1996
+
+All the various compression and encryption modes, combined with the
+wide range of machine performance encountered was beyond the ability
+of the simple timing loop used when transmitting sound files.  I
+modified it to measure the actual time between packets, compare it to
+the correct inter-packet time based on the number of samples in the
+packet, and correct the wait time using an exponentially smoothed
+moving average with smoothing factor of 0.9.  This will, in most
+cases, home in quickly on the correct delay without being upset too
+much by instantaneous changes in system load.
+
+The more accurate calculation of packet cadence times ran squarely
+into an eccentricity of usleep() on BSD--if you call usleep() before
+the previous setitimer has gone off, the nearer-term delay will apply.
+This could lead to disaster when our own timeout went off.  I modified
+the private copy of usleep() in usleep.c, now renamed sf_usleep(), to
+behave reasonably, including stacking and unstacking preexisting
+SIGALRM handlers and interval timers.  All platforms now call
+sf_usleep(), eliminating the different handling of this function all
+over the program.
+
+Added a nicer status message when connected to a VAT conference that
+shows who's in the conference and updates every time the members
+change.  I increased the size of the "user name" field (con_uname) in
+the connection structure in speakfree.h to accommodate longer
+conference lists and protect against lists longer than the field size
+overwriting the structure.
+
+Integrated three fixes from Eugene Crosser in mike.c and soundbyte.c
+for problems experienced on Linux and with half duplex in general:
+
+    1.  In mike.c line 657, if sfspeaker is not running on the local
+        host, soundinit() is not executed, causing soundrab to read
+        from unopened fd.
+
+    2.  In mike.c line 1195 return from main() leaves the terminal in
+        noecho mode.
+
+    3.  In soundbyte.c line 119 set nonblocking mode on audio is not
+        executed on Linux.  Thus sfmike blocks in soundflush() on the
+        second pause/talk toggle.
+
+6.0-Alpha 4 prerelease.
+
+29 February 1996
+
+When sending live audio from a Solaris system, the read() from
+/dev/audio in soundgrab() (soundbyte.c) could be blown away by the
+timer signal.  Fixed to retry if it fails with EINTR.
+
+Cleaned up the #ifdefs around the sound packet timing code in mike.c
+to make the BSD_like and System V cases always mutually exclusive.
+
+Sflwl could crash if "-vv" debugging was enabled and a BYE packet was
+received out of the blue from host when no hosts were connected.
+Fixed.
+
+1 March 1996
+
+When I integrated the little-endian fixes into vatpkt.c from the
+Windows version, I fat-fingered two instances, using ntohs() instead
+of htons().  Since these functions are, in fact, identical on every
+machine I am aware of, this worked but was unclean.  Scrubbed and
+polished.
+
+5 March 1996
+
+Feature release 6.0.
+
+10 March 1996
+
+Revised simple (-C / 2X) compression to use the linear interpolation
+rate conversion routine from "sox".  It still doesn't sound great, but
+it's better than it used to be.
+
+11 March 1996
+
+If the user combined key file encryption with one of the 8 byte frame
+encryption methods (IDEA, PGP, or DES) and the original packet was not
+a multiple of 8 bytes, the last frame would be incorrectly decrypted.
+Speaker.c was not key-file decrypting the pad bytes at the end of the
+packet as required by the subsequent decryptions.  Fixed.
+
+Integrated the NSA LPC-10 2400 baud CODEC as an option for Speak
+Freely protocol.  It's kept in a new lpc10 directory, and activated
+with the "-lpc10" option on sfmike.  Note that this CODEC is entirely
+unrelated to that selected by "-lpc" and cannot be used in RTP and VAT
+modes because it is not one of the forms of compression prescribed for
+those protocols.  Due to the extreme (better than 25 to 1) compression
+of this protocol, per-packet overhead becomes a substantial part of
+the bandwidth sent.  I added a dirty trick called "packet stuffing"
+for use with this compression mode.  The no longer used 16 byte
+"sendinghost" field actually carries the last 16 bytes of the packet.
+Stuffed packets are re-shuffled upon receipt by speaker.c.  For
+compatibility, stuffing is used only with the new LPC-10 compression
+mode; for the other modes the 16 byte overhead is not that significant
+an overhead.
+
+Stuffing reduces the per-packet overhead to 8 bytes, with a 78 byte
+packet carrying an original payload of 1800 uncompressed samples.  The
+outbound data rate is, then, 346 bytes per second, or 2773 bits per
+second.
+
+22 March 1996
+
+Sending nonencrypted packets to multiple hosts in Speak Freely
+protocol on a little-endian machines failed because sendpkt() in
+mike.c didn't undo the htonX() transformations of fields in the sound
+buffer before sending the packet to the next destination host.
+
+Sending nonencrypted packets to multiple hosts in Speak Freely
+protocol using LPC-10 compression failed because the "packet stuffing"
+done to reduce the number of bytes per packet in LPC-10 protocol was
+not reversed after transmitting a packet to a given host.  Fixed in
+mike.c.
+
+23 March 1996
+
+Sending packets to multiple hosts in LPC-10 robust mode sent invalid
+packets to all but the first host after the first 128 packets had
+been sent.  The "unstuff" code in sendpkt() in mike.c was clearing the
+robust mode sequence number in the buffer.buffer_len field after
+unstuffing, not before as required.  Fixed.
+
+24 March 1996
+
+Integrated the compression type editing code from speaker.c into
+echo.c so the echo server -v connection log will distinguish LPC-10
+from uncompressed packets.
+
+6.1-Alpha 1 prerelease.
+
+28 March 1996
+
+To avoid problems with C libraries that don't define nint(), I
+incorporated the round() replacement for nint() from the CELP library
+and modified all the references to nint() in the lpc10 library to use
+L_nint(), which is #defined to round() in lpcdefs.h.  This roundabout
+redefinition allows going back to an inline implementation of nint()
+if that proves important for performance reasons.
+
+6 April 1996
+
+In order to get rid of compiler warnings on Solaris, I added a
+typedef signalFUNC to the signal function type in the #ifdef
+Solaris block in speakfree.h and modified the #define signal()
+for Solaris to cast its second argument to this type.  In
+addition, I added a definition of signalFUNCreturn which casts a
+value to this type on Solaris and is void on other platforms.
+This is used in usleep.c to cast the result of signal().  This
+code may be applicable on other System V platforms, but I'm not
+going to enable it on speculation.
+
+All of the Speak Freely executables used argv[0] as the program
+name in usage, status, and error messages.  When the program was
+executed with  long explicit path name (as if often the case when
+daemons are started at boot time), this generated a lot of clutter
+in the log file.  I added a prog_name() function which trims all
+but the final executable name from the argv[0] string and uses that
+as the program name.  Sfvod.pl already contained this logic, so there
+was no need to modify it.
+
+7 April 1996
+
+Specifying options (compression modes, for example) on sfvod to be
+passed on to sfmike didn't work since they got appended to the sound
+file name(s) instead of appearing before the -p specification of the
+destination(s).  I modified the command line parser in sfvod.pl to
+distinguish sound file names from post "-" options, assemble them in
+separate strings, and emit the options before the destinations on the
+sfmike command line.  I also added code to echo the command line when
+the "-d" option is set; this makes it easier to debug what's being
+passed to sfmike.
+
+Added a new "-Wport" option to sfspeaker which causes it to do nothing
+other than publish its identity on an Look Who's Listening server.
+This allows sfvod servers to identify themselves without adding all
+the complexity of direct communications to sfvod itself.  When invoked
+with "-Wport", sfspeaker does not create or bind any inbound sockets.
+This allows it to coexist with other copies of sfspeaker running on
+the same machine regardless of how they were invoked.
+
+If SPEAKFREE_LWL_TELL is defined, sfvod now forks a process and
+invokes sfspeaker with the -W option to announce the voice on demand
+server to the LWL host.
+
+Holy proliferating packets, Bitman!  You mean it's possible for one
+user to publish his identity on more than one Look Who's Listening
+server?  That's right, Rotten, now you can list up to five Look
+Who's Listening servers on your SPEAKFREE_LWL_TELL environment
+variable, separated by commas, and sfspeaker and sfecho will publish
+your listing on each server you name.  The limit of five is not
+inherent, just intended to keep people from going off the deep end.
+In addition, the SPEAKFREE_LWL_TELL hosts can be specified by IP
+address as well as host name, for example (sh/ksh syntax):
+
+  SPEAKFREE_LWL_TELL="lwl.somewhere.net,12.122.85.201,lwl.elsewhere.net"
+
+This is primarily intended to allow echo and voice on demand servers
+to advertise their existence on multiple regional LWL servers, but
+there's nothing to keep a user running sfspeaker from publishing on
+multiple sites.  Supporting this required installing the multiple site
+scanning and notification code in speaker.c and echo.c, plus a small
+tweak in lwl.c so that if no SPEAKFREE_LWL_ASK variable is set and
+SPEAKFREE_LWL_TELL is used as the default, only the first server in
+the list will be queried.  (Multiple-server LWL queries have their
+merits, but are better hacked in Perl than coded in C.)
+
+8 April 1996
+
+When I added multiple LWL publication to echo.c, I inadvertently broke
+retry of failed LWL connections by echo servers.  Sfspeaker gives up
+on a failed LWL host immediately (to avoid bombarding former LWL
+servers with packets), but echo servers are assumed to be more
+responsible and since they run unattended for long periods of time,
+need to be able to reconnect after an LWL server has been offline for
+a while.
+
+For the sfspeaker -d option to work with the -w (LWL only) option,
+recognition of the -d option had to be moved to pass 1 option
+processing in speaker.c.
+
+Tightened up the parsing of multiple hosts on a SPEAKFREE_LWL_TELL
+statement; spaces are now allowed before a host name, and a void entry
+no longer fools inet_addr() into returning an IP address of 0.0.0.0.
+The new code is now used by both sfspeaker and sfecho.
+
+Added a new optional compile-time definition, AUDIO_BLOCKING, not
+defined by default.  If you define it, the non-Sun (i.e. Linux and
+FreeBSD) code in soundbyte.c will read from the sound card with
+blocking reads.  This should help some drivers which don't handle
+non-blocking I/O.
+
+Memo to file: the half-duplex transition handshake between sfmike and
+sfspeaker assumes sfspeaker is listening on the standard INTERNET_PORT
+of 2074.  If you've specified a different port with the -Pport option
+on sfspeaker, a half duplex mute request from the local host will be
+ignored.
+
+6.1-Alpha 2 prerelease.
+
+17 April 1996
+
+Integrated a fix from Malcolm Beattie for older versions of the C
+library on Linux which do not place the coprocessor into default IEEE
+mode.  This can result in what should be harmless floating point
+underflows in lpc/lpc.c (which default IEEE handling simply rounds to
+zero, as the code intends) crashing sfspeaker with a floating point
+exception instead.  Current libraries are supposed to set IEEE
+operation by defaults and not require this fix.  Since I don't have a
+Linux machine to test this on, even though the fix should be harmless
+on later releases, I made the fix activated only if LINUX_FPU_FIX is
+defined at compile time.  Mike.c and speaker.c now make a
+__setfpucw(_FPU_IEEE) call at initialisation time if LINUX_FPU_FIX is
+defined.  I also added a comment to the Linux section of the Makefile
+describing the circumstances in which the fix should be enabled.
+
+Bradley Allen pointed out that the "#define int long" in
+lpc10/lpcdefs.h could cause an error if a subsequent system include
+file contained a "short int whatever;" declaration.  This #define
+crept in during a since-abandoned attempt to get lpc10 to work on
+Windows 3.1.  Since all Speak Freely for Unix platforms are 32 bit, I
+just removed the #define.
+
+Andrey A. Chernov supplied fixes for several build issues noted on
+FreeBSD. The "-static" previously used on the link flags was removed
+for FreeBSD 2.2.  The little ephemeral program that the sfvod build
+process creates in order to discover the settings of AF_INET and
+SOCK_DGRAM on the current system was executed as "sfvod-t" instead of
+"./sfvod-t", as required for people who, for security reasons, don't
+have the current directory in their path.  Finally, the "#define
+const" in libdes/des.h caused lots of warning messages in FreeBSD and
+keeps gcc from replacing library function calls with intrinsics.  I
+made the definition of const to nothing contingent on OLDCC, as is
+already used for SunOS "cc" and other K&R-classic compilers.
+
+To help diagnose oddities in translation of DES key strings into 56
+bit DES keys, I added code to speaker.c to dump the computed DES keys
+in hex if the -d option is set.  Mike.c already did this.
+
+18 April 1996
+
+The -u output output from sflwl was identifying itself as the server
+program, not the client.  Fixed in lwl.c.
+
+Some people have started sending huge strings to the sflwld servers,
+some with embedded HTML markup.  These consume lots of space in the
+packets returned to requestors, and may result, for example, in not
+all the echo servers being listed.  I modified lwld.c to prune the
+strings returned to in reply packets to a maximum of 48 characters
+each, dropping HTML markup, redundant white space, and attempting when
+truncation is still required, to do so at a word boundary.  I also
+drop non-ISO characters which may be present.  This affects only
+strings in reply packets--the full information sent by the user
+continues to appear in the HTML active users file.
+
+Feature release 6.1.
+
+23 April 1996
+
+Integrated FreeBSD and anti-zero-divide fixes for lpc/lpc.c from
+Andrey A. Chernov, and also yet another byte-order fix which caused
+debug traces to show incorrect packet lengths when sending sound files
+on little-endian machines.  I also integrated his suggestion of a
+higher initial correction in the sound file timing code for FreeBSD,
+since most machines which run it are slower than typical workstations.
+
+Added the ability for Look Who's Listening servers to talk to
+one another, forwarding packets they receive to as many as
+LWL_MAX_SITES (defined in speakfree.h as 5) other LWL servers.
+This will allow weaving the currently-isolated servers into an
+interconnected web so that regardless of which server a user queries,
+he can see users active on all servers which forward to one another.
+Here's how it works; all modifications are to lwld.c.  A new
+"-f" option was added to sflwld, which accepts a comma-delimited
+list of servers (and optional port numbers, preceded by a colon).
+For example:
+
+    sflwld -flwl.fourmilab.ch,lwl.somewhere.edu,lwl.elsewhere.com
+
+Any LWL packet received from a host will be forwarded to all the
+hosts named in the forward list.  A forwarded packet is flagged by
+setting the 0x40 bit in the first byte, and contains four extra bytes
+at the end which give the IP address of the originating host.  Packets
+forwarded from other hosts are never, themselves, forwarded: the risk
+of forwarding loops is just too great and would be too difficult
+to track down.  Undoubtedly, a list of intercommunicating public
+servers will be published so operators of a new server will know
+who to forward to and how to publish the existence of their new
+server.  Eventually this may be automated.
+
+In order for forwarded sites to appear on the destination host, both
+the forwarding and the destination host must be running an sflwld with
+the forwarding code present.  No harm is done, however, by sending
+forwarding messages to a pre-forwarding server--they are simply
+ignored.
+
+25 April 1996
+
+It was possible to crash a Look Who's Listening server by sending
+artfully composed bogus packets.  I added an invisible Gardol shield,
+in the form of an RTCP conformance test, gardol(), in lwld.c which
+first makes sure any packet passes the basic RTCP validity checks of a
+proper header, known payload type, and length within the packet
+matching the number of bytes received (these tests are made after
+forwarded packets are transformed into regular RTCP format).  In
+addition, the RTCP_SDES packet processor now checks for bogus packets
+with no CNAME item and discards them.  Finally, the code that finds
+the SDES, BYE, or APP subpacket in a composite packet makes sure it
+doesn't run off the end of the packet and, if no known subpacket is
+found, discards the packet.
+
+To avoid repeated "connecting forwarding socket: Connection refused"
+messages when an LWL to which we're forwarding goes down, I changed
+forwardLwlMessage() in lwld.c to only issue the message if the -D or
+-VV options are set.
+
+The LWL packet validation code unfortunately uncovered a failure
+of the Windows version to strictly comply with the RTP spec.  In
+particular, the RTCP_APP packets sent to the server to request the
+server message and to submit queries were not padded with zeroes to a
+32 bit boundary--the packet simply terminated after the end of the
+request.  I'll fix this the next time I revise the Windows version,
+but for compatibility with the installed base there's nothing for it
+but to slightly weaken the packet consistency checking to allow this
+specific case to squeak past.
+
+28 April 1996
+
+Andrey A. Chernov pointed out that without a #include <math.h> in
+lpc10/invert.c, some compilers would incorrectly interpret the return
+type of fabs().  Fixed.
+
+29 April 1996
+
+Plugged one more way sflwld could be tricked into aborting.  If a
+connection was made with a bogus protocol ID, the accept() could
+fail, causing lwld.c's main loop to exit.  I changed the behaviour
+when the accept() fails to just ignore the error and go back to the
+accept() to wait for the next connection.
+
+2 May 1996
+
+Integrated a fix from Brian Abernathy for an undefined gethostid() in
+sfmike.  Gethostid() (which is used only to build the session key) is
+emulated by a call to uname() in hp_audio.c.
+
+9 May 1996
+
+The packet validity checking in lwld.c failed to close the accept()ed
+stream socket after rejecting an invalid packet.  This meant one could
+crash sflwld by sending enough bogus packets to exhaust the maximum
+number of open file descriptors.  Fixed.
+
+29 May 1996
+
+Squashed a few more six-leggers that squirmed out during the first
+serious test of intercontinental LWL forwarding.  First of all, the
+close() of the LWL socket in forwardLwlMessage() (lwld.c) was
+misplaced, orphaning a file descriptor when LWL messages were
+forwarded to more than one site, which eventually curtailed forwarding
+when all available file descriptors were consumed.  Fixed.
+
+The time needed to connect() to a distant LWL server in
+forwardLwlMessage() was long enough for System V to jab its
+tried-and-true EINTR knife between our ribs.  I wrapped a defensive
+do {} loop around the call to silently retry it if the alarm happens
+to ring while it's pending.
+
+If -D debugging was enabled, the "received forwarded packet from"
+message misleadingly displayed the IP address of the originating site
+rather than the forwarding server.  The message now shows the server
+address, as the text strongly suggests.
+
+24 July 1996
+
+SunOS and Solaris (but not IRIX) systems use the same underlying
+mechanism for sleep() and setitimer().  This means that a call on
+sleep() has the effect of resetting the itimer to the length of the
+sleep.  This caused sfspeaker, when run with the -W ("LWL only")
+option, to transmit its LWL message every 20 minutes rather than the
+intended 10 minutes, and consequently timing out, then restarting
+repeatedly.  I changed the inner loop for "-W" option mode to use
+pause() to wait for timer signals rather than sleep(120).  This seems
+to have fixed things.
+
+To provide a little more slack in case a message to an LWL server is
+lost, I increased the frequency with which LWL messages are sent in
+speaker.c to one every 5 minutes.  With a 15 minute timeout in sflwld,
+this means three consecutive LWL notifications must fail before a site
+will be timed out.  Previously, failure to contact an LWL site in
+speaker.c caused further transmissions to that site to be abandoned
+for the duration of sfspeaker's execution.  The rationale for this was
+to avoid blindly bombarding down (or former) LWL sites with packets.
+Unfortunately, this "one strike and you're out" policy could cause
+transient failures, such as inability to connect due to network
+congestion or overload on the LWL server, to shut down transmission
+and cause the site to drop off the list at the server.  I modified
+speaker.c to only disable LWL transmissions after LWL_STRIKEOUT (5 by
+default) consecutive failures to contact an LWL host; with
+notification every 5 minutes, this means the host will be dropped only
+if it is down for at least 25 minutes, in which case the problem is
+unlikely to be transient.
+
+27 July 1996
+
+On systems which support POSIX threads (pthread_xxxx), sflwld can now
+be built to run in multi-thread mode by compiling lwld.c with THREADS
+defined.  This has been tested only on Solaris 2.5 so far; you can
+build a signle-thread version of sflwld as before by compiling without
+THREADS defined.
+
+Multi-thread operation not only dramatically untangles the logic of
+sflwld, it eliminates the bottleneck which could cause slow response
+on heavily-loaded servers, especially those which forward packets
+elsewhere.  Previously, all requests were processed by a single
+thread, with each packet being accepted only after the previous was
+completed.  This meant that a query, for example, would have to wait
+in the request queue until a previous SDES notification had been
+forwarded to all destinations.  Since forwarding is often done to
+geographically remote servers, this could take a long time and have a
+cascade effect when the forwarding destination servers were themselves
+busy.
+
+With THREADS defined, each request which arrives from the socket is
+processed by its own thread, having no need to wait for anything
+related to other requests.  A critical section lock protects the
+connection list from corruption due to multiple simultaneous updates,
+but this lock is set only during actual updates and scans of the list
+and never remains locked across a network or I/O operation which might
+be time consuming.  Separate processes periodically scan the
+connection list to remove timed-out sites and to update the HTML list
+of active sites, if configured.  For each forwarding destination a
+"forwarder" thread is created, which processes forwarding requests
+from a queue for that specific host.  If the queue exceeds
+ForwarderMaxQ (currently set to 15 messages), messages to that host
+are discarded until the queue falls below that level--this keeps a
+non-responding forwarding destination from causing what amounts to a
+memory leak in sflwld.  Since each destination has its own forwarder
+thread, problems in contacting one or more destinations will no longer
+affect others.
+
+Lightly-loaded servers that don't forward to remote locations will
+generally work fine without THREADS defined, but if your development
+environment supports POSIX threads, you'll obtain better performance
+for busy servers by taking advantage of multi-thread execution.
+
+28 July 1996
+
+If the log information written by sflwld was redirected to a file
+(for example, to make a connection log), the file was written in
+block buffered mode (stdio's default handling for standard output).
+This caused individual log entries not to be written as they were
+created, but rather in large chunks every now and then.  To allow
+real-time monitoring (with tail -f, for example), I added a call to
+setlinebuf(atdout) in lwld.c to guarantee that standard output is
+always line buffered, even if redirected.
+
+2 August 1996
+
+When lwld.c was compiled for THREADS, failure to transmit a packet to
+a forwarding destination in forwarder_thread() could cause the socket
+file descriptor for the destination to be orphaned, leading, after
+sufficiently many such reverses, to failures all over the place once
+all available file handles were consumed.  I changed the logic in
+forwarder_thread() guarantee the socket is always closed regardless of
+the outcome of the forwarding attempt.
+
+8 August 1996
+
+Reduced the interval of LWL retransmission for sfecho to 5 minutes
+(LWL_RETRANSMIT in echo.c).
+
+11 August 1996
+
+Added logic to lwld.c to plug yet another way for a remote client to
+consume resources within sflwld, eventually causing it to run out of
+file handles and go dark to the outside world.  If compiled with
+THREADS, once a request was accept()ed, a socket file handle was
+allocated for the use of the service_thread.  If a client connected to
+sflwld but never wrote anything to the socket, servicePacket() would
+block indefinitely on the recv() from the socket, tying up its file
+handle forever.  Once enough of these zombies accumulated, accept()s
+would start to fail with out of file handles.  To keep this from
+happening, I added logic in the main loop to make an entry in a linked
+list of ballOstring packets when each thread is created, recording the
+time the thread was created, its thread ID and (for debugging
+purposes), the IP address of the host where the request we're
+servicing originated.  In normal cases, service_thread() dechains this
+item and releases it before exiting with pthread_exit().  If a thread
+hangs, however, timeout_thread() will, upon discovering the thread is
+still waiting for input from the requesting host ServiceThreadTimeout
+seconds (default 60) after the accept(), use pthread_kill() to send
+SIGUSR1 to the service thread.  This will be caught by killserv(),
+which dechains the service thread item, closes the socket (if open),
+and exits the thread.  The head of the service thread list is bshead,
+and the list is protected by the criticial section lock bsLock.
+
+This fix applies only to multi-thread versions of sflwld; it's worth
+noting that single-thread versions remain vulnerable to this form of
+hang-up, with the even more dire consequence of just ceasing to
+respond.  However, given that single-thread versions have many far
+more serious problems than this, which are inherent in the code, it
+doesn't make sense trying to fix them at this time.  If there is a
+population of people who want to run heavily-loaded LWL servers and
+can't get access to POSIX threads, it would make more sense to design
+a new lwld.c that used fork(), or re-architect the whole mess to run
+off inetd.
+
+20 July (Moon Day) 1997
+
+Added an experimental implementation of jitter compensation to
+speaker.c.  Jitter compensation is enabled with the -J option on
+sfspeaker.  The -J option specifies, by two comma-separated numbers,
+the initial delay and length of silence which resets jitter
+compensation, both in milliseconds, with 250 milliseconds the minimum
+for each.  If no idle time is specified, twice the jitter delay is
+used; if neither delay nor idle time is given, the delay is one second
+and the idle time two seconds.
+
+For example, to accumulate samples for 3 seconds before starting to
+play, and to reset the jitter timer after 4 seconds of silence, one
+would specify:
+
+    sfspeaker -j3000,4000
+
+Jitter compensation is implemented by buffering samples in memory and
+only starting to play them after the jitter delay time has elapsed.
+The implementation assumes the audio output device is capable of
+buffering as many samples as will accumulate during the jitter
+delay--if it does not do this properly, jitter compensation will be
+unusable.  The only alternative to requiring proper buffering in audio
+output would be a multithreaded version of sfspeaker, which would make
+it far less portable than assuming audio output buffering.
+
+Implemented a rudimentary busy signal facility in speaker.c.  If the
+-B option is specified on the sfspeaker command line, only one
+connection will be accepted at a time.  If another user attempts
+to connect while a connection is active, the command which follows
+the -B option will be executed to notify the caller that the
+sfspeaker user is occupied with another call.  The command must
+be a C printf() format string containing a "%s" phrase at the
+point the IP address of the calling host should be inserted.  If
+no command is specified, the default is equivalent to specifying:
+
+    sfspeaker -b"sleep 10; sfmike %s busy.au"
+
+The "busy.au" file is a recording of the busy signal used in North
+America, with the tone repeated four times.  Users should be aware
+that there is no international standard for busy signals, so if you
+communicate primarily with people in your area which uses a different
+telephone busy signal, you might want to use a recording of that tone.
+
+The ten second sleep is intended to increase the probability a
+half-duplex user will hear the busy signal after sending the
+transmission which triggers it.  After a busy signal is sent to a
+caller, all packets from that host are silently discarded for an
+interval specified by busytimeout in the speaker.c source code, set to
+60 seconds in the distribution.  After that delay, additional
+connection requests from the host will be processed, resulting either
+in a connection or another busy signal.
+
+It should be observed that this busy signal implementation continues
+to rely upon the "community of reasonable people" model for which
+Speak Freely was intended.  Since a connection is closed by the remote
+user "hanging up" (quitting sfmike, or closing the connection window
+in the Windows version), a "denial of service attack" is possible in
+which a malicious user connects to the victim and refuses to
+disconnect, thereby blocking other inbound calls.  If you run
+sfspeaker with the -v option (as most users do), you can easily detect
+this by seeing connections rejected by busy signals while a silent
+connection remains active.  Note that the three-minute inactivity
+timeout guarantees that callers whose machines crash will not block
+the receipt of other calls.  If malicious refusal to disconnect
+becomes a problem, a "kill file" facility may be needed.  Amateur
+radio has operated for the better part of a century on the assumption
+some bozo will not block a QSO by sending an unmodulated
+carrier--let's hope, for the moment, that Speak Freely users on the
+Internet will be at least as mature and responsible.
+
+Some implementations of make and/or shells were baffled by the
+specification of the quoted release number (Relno) definition
+in the Makefile.  I moved this to a separate version.h file, in
+which the version number must appear as the last line, quoted,
+by itself.  This is required so the Makefile can embed the
+version in the sfvod Perl script.
+
+21 July 1997
+
+Swept up some lint in speaker.c.
+
+Release 6.1c.
+
+11 April 1998
+
+The HTML active sites file created by makeHTML() in lwld.c displayed
+the time and date of the report in UTC, but the last update time in
+the local time of the site.  I changed it to show all times in UTC.
+
+12 April 1998
+
+Completed the first cut of the new conference reflector (reflect.c)
+as described in the manual page sfreflect.1.
+
+Ported the periodic client-pull refresh (-r option) code from
+reflect.c to lwld.c and added documentation to sflwld.1.  I also
+included the modification to etime() in lwld.c to edit the year in the
+title as reflect.c now does.
+
+Fixed some lint quibbles in lwld.c; none were serious.
+
+Added a gimmick at the top of soundbyte.c which allows overriding the
+default name for /dev/audio and specifying different audio device
+files for input and output (the correct one is selected within
+soundinit() depending on the iomode argument).  This allows Linux
+users whose drivers require opening separate /dev/audio and
+/dev/audio1 devices for full-duplex to accomplish this by adding the
+definitions:
+
+        -DIN_AUDIO_DEV=\"/dev/audio\" -DOUT_AUDIO_DEV=\"/dev/audio1\"
+
+to the CCFLAGS declaration in the Makefile.
+
+Updated dependencies in the Makefile.
+
+14 April 1998
+
+Cleaned up timeout and LWL update logic in reflect.c.  The reflector
+inherited some rather confusing timing logic from the echo server,
+which needs precise timing in order to retransmit packets at the
+correct time.  Since the reflector immediately retransmits any
+sound it receives, it doesn't need timing to any better than a second,
+so I ripped out all the potentially unportable microsecond logic
+and replaced it with simple calls on time() and alarm().
+
+Okay, I finally figured out a mechanism (all right, kludge) that
+permits a user to run the reflector and participate in a conference it
+is mediating all on the same machine.  Here are the ugly details.  The
+fundamental problem is that sfrelect has to bind the audio and control
+ports for the conference in order to receive audio from participants
+and, by doing so, blocks sfspeaker from listening to those same ports
+on the machine running sfreflect.  So, while a user is free to use
+sfmike to transmit to the conference on the machine running sfreflect,
+there's no way following the usual rules to hear the audio from the
+reflector.  Well, if you don't like the rules, *change them*!  Enter
+the "-m" (monitor) option on sfreflect.  This allows you to specify a
+host (and optional port number--the default is the usual Internet_Port
+in the Makefile, usually 2074) to which all audio received by the
+reflector is retransmitted, in addition to the conventionally
+connected hosts.  If you want to reflect a conference on your machine
+and participate at the same time, proceed as follows:
+
+    1.  Start sfspeaker as usual.  We'll assume you use the
+        standard port of 2074.
+    2.  Start sfreflect specifying the -mHOST option where HOST
+        is your machine's name.  We'll assume you're using the
+        default port of 4074 for sfreflect.
+    3.  Join the conference with "sfmike HOST:4074" where HOST is
+        as above.
+
+Now consider what will happen.  When you send to HOST:4074, sfreflect
+will not echo that message back to HOST, as it is the originator
+(thank goodness, since that would create an infinite audio loop!), but
+will echo to the host specified by the -m option, which is the default
+port on HOST, where sfspeaker will play the audio.  When others send
+audio, it will also be sent to the monitor host, so with this little
+work-around you can reflect a conference and participate without
+having two separate computers.
+
+If a monitor site is configured, the reflector also receives control
+port heartbeats from the reflector at the same time they are sent to
+connected hosts.
+
+It's ugly, but it gets you there.
+
+15 April 1998
+
+Well, almost there.  Running the reflector and joining a conference it
+is mediating on the same machine had some additional ramifications
+which needed to be addressed.  First of all, consider that when sfmike
+is started, pointed at the reflector on the same machine, that will
+cause an entry to be made in the connection table pointing to the
+machine running the reflector.  In the absence of a special case to
+prevent it, this will cause heartbeats to be sent back to the
+reflector itself (keeping it from timing out) and audio received from
+sites other than the reflector to be resent to the reflector itself,
+resulting in duplicate packets and stuttering audio.  I added tests
+in both the heartbeat and audio reflection code to skip sending a
+packet when the destination host is the same as the host running the
+reflector.
+
+One additional tweak is required in the handling of a monitor host.
+Since we don't want to ever locally sound originating on the local
+machine (which might cause echo or feedback in the full-duplex case),
+a test is needed to avoid forwarding packets originating at the same
+IP address as the monitor host.  Note that while most applications of
+the monitor host will involve the monitor host being identical to that
+running the reflector, this test is correct in the general case.  If
+the reflector is running on a "headless" server with no audio hardware
+and sending monitor packets to a different workstation, we still don't
+want to reflect packets originating at that workstation back to
+itself.
+
+16 April 1998
+
+Added a test for localhost (127.0.0.1) as an alias for the actual IP
+address of the machine running the reflector in each of the three
+places we test to avoid forwarding a packet to ourselves.  I hope I've
+gotten the byte-order independence right on this test, but all the
+machines I've tested it on are big-endian.
+
+19 April 1998
+
+The HTML status documents created by sflwld and sfreflect were
+vulnerable to unquoted HTML control sequences embedded in text
+supplied by users.  While some users took advantage of this to
+include HTML links, others supplied incorrect HTML which caused some
+or all of the balance of the file to be discarded by the browser.
+I added an outHTML() function in the new file html.c which quotes all
+HTML sensitive characters as they are transcribed.
+
+23 July 1998
+
+The lpcdecomp() function in speaker.c was using ntohl()
+instead of ntohs() to extract the uncompressed length from
+the first two bytes of buffer_val.  This may be the source
+of the reports of "deafening static" by Linux users.
+
+The gsmdecomp() function in speaker.c was missing the required
+ntohs() when extracting the uncompressed length.  This seems
+to have done no harm since the length was immediately fixed by
+the sanity check which follows.  I added the call to avoid the
+need to be saved by the sanity check.  I also extended the
+sanity check to first try a byte swap before forcing the field
+to the full packet length.  This should make speaker.c accept
+either big- or little-endian values in this field.
+
+To ease the transition from prior releases with the byte
+order bug in GSM packets, I added a variant of the "-t"
+option in mike.c, "-tc", which causes the GSM length field
+to be sent correctly, in network byte order.  This option
+is meaningful only on little-endian machine (since on
+big-endian machines, host and network byte order are
+identical).  Specifying the -tc option allows a little-endian
+Unix host to communicate with a Windows machine or big-endian
+Unix machine running a release prior to 6.1e.  In addition,
+if BYTE_SWAP_DEBUG is defined, a -td option is available which
+unconditionally swaps the bytes in the GSM length field.  This
+was included solely to permit testing the compatibility code
+in speaker.c from sfmike running on a big-endian machine.
+
+Added the following message when speaker.c fails to open
+audio output in the hope of reducing the puzzlement of
+those plagued with a half-duplex /dev/audio driver:
+
+    opening audio output device: No such device or address
+    A common cause of this error is a sound board or
+    driver which cannot run in full duplex mode (some
+    boards which are physically capable of full duplex
+    have drivers which cannot run them in this mode).
+
+    Try uncommenting the line:
+
+        DUPLEX = -DHALF_DUPLEX
+
+    in the Makefile, then "make clean", then "make".
+    This will operate your board in half-duplex mode
+    and avoid the conflict which probably caused the
+    error opening audio output.
+
+17 September 1998
+
+Removed an extra argument to a fprintf in debug code in
+speaker.c which was spotted by the SGI C 7.2.1 compiler.
+
+Release 6.1e.
+
+2 March 1999
+
+The two tests for robust mode packet replication in mike.c
+used lpc10comp function as the conditional for the test instead
+of the lpc10compress flag.  This didn't cause any problem
+since the function name was always equivalent to TRUE and
+"robust" never gets set unless the correct flag, lpc10compress,
+is set.  This error was nailed by the SGI IRIX 6.5 C compiler,
+and is now fixed to use lpc10compress.
+
+Added Blowfish as an encryption option in sfmike.c and sfspeaker.c,
+with both programs using the "-bf" option to specify the key.  The
+Blowfish library is built in a new blowfish subdirectory.  Blowfish is
+operated in 128 bit mode, with the actual key generated from the
+user-supplied key with the MD5 algorithm.  Since the "-b" option
+was previously used by sfspeaker to specify an arbitrary busy
+signal command, I added a note to the sfspeaker manual page
+observing that in the unlikely event the first character of the
+busy signal command should be "f", one can simply quote the command
+(if not already quoted) and precede it with a space, which the shell
+will ignore.
+
+I made a slight modification to the Blowfish library to automatically
+set the BF_PTR optimisation flag in blowfish/bf_locl.h if "sparc"
+or "mips" is defined at compile time.  This avoids having to set
+these flags via CFLAGS.  This is only a speed optimisation; the   
+code will work correctly with this variable mis-set.  The code
+recommends defining BF_PTR2 for Intel machines prior to the
+Pentium Pro, again purely as a speed optimisation.  I did not
+attempt to do this, since I know of no preprocessor symbol valid
+on all x86 compilers which allows detecting such processors
+unambiguously.  Further, I made no attempt to use any of the
+assembly language inner loops provided with the code.  Since
+Blowfish encryption and decryption is so fast (once the key has
+been generated, which only happens once per execution of sfmike
+and sfspeaker) compared to GSM, LPC, or LPC-10 compression,
+even without perfect optimisation settings Blowfish will account
+for a very small fraction of the CPU time per packet.
+
+3 March 1999
+
+Added documentation for Blowfish encryption to the sfmike.1 and
+sfspeaker.1 manual pages and cleaned up some awkward phraseology which
+had accreted over the years.
+
+Sfvod, which works perfectly fine on Perl 4.036, failed on Perl 5.004
+in a bizarre manner which took the better part of a day to track down.
+The problem ended up being a stone bug in Perl 5.004: if a signal
+was processed while blocked in recv() waiting for a packet to arrive,
+when the next packet was received, recv() would return the null string
+for the sender's address, even through the data for the packet was
+properly stored into the string argument.  I happened to notice that
+the UDP example program in "Programming Perl, 2nd ed." did not block
+on recv() but instead called select()--it had to, since it was waiting
+on multiple clients.  Okay, I thought, let's use a totally unnecessary
+select() (since sfvod listens only to one socket) and see if that
+works around the bug.  Damned if it didn't, and the modified code
+works on both Perl 4 and 5.  I thought about using the timeout feature
+in select() to replace the existing alarm() mechanism (it would be
+safer, as &tick() would always be called in a known environment), but
+the Perl manual warns that you can't be sure select() will return
+a valid time left value on all platforms, which could potentially
+cause the timeout to be disabled due to inter-packet arrival times
+less than the tick interval.
+
+4 March 1999
+
+I added a "text chat" feature to mike.c and speaker.c to allow people
+to send text messages while they're trying to establish a reliable
+audio link (or for any other reason).  When you're running in push
+to talk mode in sfmike, pressing the period (.) key now displays a
+"Chat:" prompt, pausing audio transmission if it was in progress.
+The user can then enter a line of text in regular input mode, and
+when Return is pressed, the text is sent to all destinations on
+the control port as an RTCP APP message with type "SFtc".  Upon
+receiving such a message, sfspeaker prints its content on standard
+output, prefixed with the best available information about the sender,
+in decreasing order of preference: user name, E-mail address, host
+name, and IP address.
+
+Previously, speaker.c didn't bother to decode the identity information
+in RTCP SDES packets unless the option to show connections was set.
+Since this information may be needed to identify senders of text
+chat packets, I modified it to always decode SDES packets.  The
+overhead is negligible.
+
+The loop-back mode in speaker.c contained obsolete logic to compute
+packet length which resulted in its sending extra bytes at the end
+of the packet returned to the sender.  This ran afoul of the packet
+length sanity check in the recipient's sfspeaker, causing the packet
+to be discarded.  Fixed.
+
+For some screwball reason I can't make head or tails of, if you quit
+sfmike while in talk mode on Silicon Graphics IRIX 6.5, not only
+does Speak Freely exit but the Winterm you're running it under
+also quits, closing the window where you're running sfmike.  This
+does not happen on Solaris, nor does it happen if you run sfmike
+under the SGI debugger.  I've tried all the obvious things, including
+completely simulating transition back to pause mode and waiting
+10 seconds before exiting, but at the moment the exit() is executed,
+bye-bye Winterm.  Precisely the same thing happens if you run sfmike
+under xterm, or under csh or sh instead of ksh.  However, if you run
+sfmike with the "-a" option (always transmit), and kill it with
+Control C in mid-transmission, everything shuts down just fine.
+Beats me.  Well, after another hour of flailing around, I discovered
+that moving the fcntl(fileno(stdin), F_SETFL, 0) which sets stdin
+back into blocking I/O mode after the call to switch back to
+cooked mode rather than before fixes the disappearing shell window
+problem.  Sigh.  If you need to revisit this, look at function
+exiting() in mike.c.
+
+Updated sfmike.1 and sfspeaker.1 manual pages, and revised the
+introductions to each to be more generic in terminology across
+various Unix platforms.
+
+5 March 1999
+
+Fixed a typo (actually, a blind-copy-o) in speaker.c's how-to-call
+text; in sfspeaker, the -BF option decrypts, not encrypts.  (Spotted
+by RZG).
+
+Release 6.1f.
+
+5 April 1999
+
+Fixed a harmless extra argument on the SHOW_SOCKET fprintf debug
+code in echo.c.
+
+Implemented fixes to lpc/lpc.c forwarded by Enzo Michelangeli.
+These should eliminate distortion primarily due to overflows in
+computing parameters.  LPC still doesn't sound great, but it
+shouldn't break up so badly due to clipping.  These fixes
+interoperate with no problems with pre-fix LPC CODECs so there's
+no problem earlier versions.
+
+6 April 1999
+
+The current version and release date is defined in version.h, which
+was included in speakfree.h to make it available to each main program.
+This created a Makefile dependency of speakfree.h on version.h, which
+created the curious situation that if you updated version.h and did
+not modify speakfree.h, every program which included speakfree.h would
+be rebuilt on every make.  I modified each program which actually
+needs the version (echo.c, lwl.c, lwld.c, mike.c, reflect.c, and
+speaker.c) to explicitly include version.h, removed the include of it
+from speakfree.h, and updated the dependencies in the Makefile to
+reflect these changes.
+
+Release 6.1g.
+
+2 May 1999
+
+Text chat messages sent to a reflector operated by sfreflect caused it
+to crash attempting to interpret the RTCP APP message as an SDES.
+Added code to reflect.c to detect text chat packets received on the
+control port, reformat them to embed the sender's identity in the text
+area (since otherwise they'll contain only the identity of the
+reflector), and retransmit them to the control port of all connected
+hosts (and the monitoring host, if any).
+
+Added code to soundbyte.c, conditional on LINUX_DSP_SMALL_BUFFER,
+which attempts to limit the input sound buffer size to 2048 bytes.
+I have not personally tested this code and LINUX_DSP_SMALL_BUFFER
+is not defined by default.
+
+Release 6.1h.
+
+17 May 1999
+
+Redesignated as Release 7.0 to synchronise with Windows release.
+Other than the version change, there are no changes in this release.
+
+Release 7.0.
+
+25 August 1999
+
+Added a -w option to mike.c which dumps raw audio input to a
+binary file.  This is intended to facilitate debugging of audio
+input hardware which requires special settings to produce input
+in the 8000 sample per second 8 bit mu-law encoding expected by
+sfmike.
+
+30 August 1999
+
+Integrated code from Jean-Marc Orliaguet to support Linux (and
+other platform) audio hardware which doesn't support 8 bit
+mu-law audio.  Defining LINEAR_NEEDED includes code which translates
+on the fly between 16 bit PCM and mu-law.  As I have no audio hardware
+which requires this, this code has not been tested other than to
+verify that it compiles correctly when enabled.
+
+Integrated code from Jean-Marc Orliaguet to add a new "-e" option
+to sfspeaker.  When a new connection is opened, the argument to
+the "-e" option is executed as a command, with the character sequence
+"%s" replaced by the hostname of the connecting hosts.  One might,
+for example, answer calls automatically with:
+
+    sfspeaker -e"killall sfmike >&! /dev/null; sfmike %s"
+
+31 August 1999
+
+The half-duplex muting code which coordinates handing the
+audio device back and forth between sfmike and sfspeaker was
+unnecessarily looking up the local host's name and IP
+address, which could fail under certain bizarre circumstances.
+I modified it to use the standard local loopback address of
+127.0.0.1 which, in the interest of paranoia, I supplied
+definitions for in mike.c and speaker.c in case some
+screwball system doesn't define it in <netinet/in.h> as it's
+supposed to.
+
+Turned off code in mike.c introduced in release 6.1e to transition
+from the incorrect GSM byte order sent by little-endian platforms
+prior to that release.  To send the correct byte order, you needed
+to use the -TC option on sfmike.  Now that almost everybody is
+running versions which understand the corrected byte order, this
+has been made the default.  If you absolutely have to transmit to
+a Unix user running an older version on a little-endian platform,
+you can specify "-TD" to force the old, incorrect, byte order.
+
+Release 7.0b.
+
+1 September 1999
+
+Added a test in mike.c for failure of gethostname().  If a system is
+sufficiently misconfigured that it can't obtain its own host name,
+we just call it "localhost" rather than in all likelihood crashing
+due to an uninitialised value for the host name.
+
+Removed obsolete "OLD2X" compression code in mike.c and speaker.c.
+It's not like we were going to re-enable "mumble mode" compression
+some day.
+
+Removed conditional code in mike.c based on definition of
+TINY_PACKETS.  This definition has been required for years, and
+the code which predated it was obsolete and confusing in some
+places.
+
+The new files common.c and common.h, added by Jean-Marc Orliaguet
+to support the "-e" option in sfspeaker (execute command on
+connection) contained ANSI C function declaration syntax.  I
+downgraded this to K&R to maintain the tradition that Speak
+Freely can be built even on ancient versions of SunOS which
+don't come with an ANSI compiler.  I added a #include of common.h
+to speakfree.h, which allowed dispensing with the explicit
+(and potentially dangerous, as pointer and integers need not
+have the same length) casts in speaker.c.  The code which expanded
+the reply command did not check for failure to allocate the expanded
+command and didn't release the dynamically allocated command buffer,
+creating a memory leak on each connection.  Fixed.
+
+Changed des/ and idea/ from object files explicitly linked into
+sfmike and sfspeaker to libraries like the other crypto packages
+(libdes/ and blowfish/).
+
+Added the ability to build no-crypto versions of sfspeaker and sfmike
+(the only components of Speak Freely for Unix which include encryption
+code).  If "NOCRYPTO" is defined at compile time, speakfree.h will not
+define the symbol "CRYPTO" on which all encryption code in mike.c and
+speaker.c is now conditional.  At link time, the various encryption
+libraries will not be pulled in since no references to them appear
+in the main programs.  On non-crypto builds the how-to-call
+instructions (-u option) on sfmike and sfspeaker identify themselves
+as non-crypto versions and provide the URL from which full crypto
+source code can be obtained.  In addition, if the non-crypto version
+of sfspeaker receives encrypted audio, it emits a warning (once per
+connection) which explains why it is unable to decode the audio and
+again directs the user to the URL for a full crypto edition.
+
+The rationale for the non-crypto version is precisely the same as
+motivated the creation of the non-crypto Windows edition; it permits
+the creation of ready-to-run binaries for widely used platforms such
+as Linux and FreeBSD which can be freely distributed without concern
+for export controls and other regulations on encryption technology.
+Once a user installs such an edition and gets it to work transmitting
+in the clear (which one should do in any case before experimenting
+with encryption), they can then download a version with encryption
+and replace the binary they initially received.
+
+Note that non-crypto builds apply only to *binary* distributions
+of Speak Freely.  Any source distribution includes all of the
+encryption modules and must be treated as cryptographic software.
+
+Integrated fixes from  Walter Haidinger (walter.haidinger@gmx.at) 
+to provide fine-grained control over the size and number of buffers
+used by the Linux OSS audio input driver.  If LINUX_DSP_SMALL_BUFFER
+is defined, you may now also specify:
+
+    FRAGMENT_BUFSIZE=32
+    FRAGMENT_BUFPOWER=8
+
+which set the size of individual audio input "fragments" to
+(2 ^ FRAGMENT_BUFPOWER) and the number of fragments in the
+overall buffer FRAGMENT_BUFSIZE.  Mr. Haidinger reports that the
+values given above result in about one second of audio delay with
+no lost audio on his configuration.  Note that these settings have
+no effect whatsoever unless LINUX_DSP_SMALL_BUFFER is also
+defined.  See the Makefile Linux configuration section for
+additional details, and the README.Linux_OSS_bufsize document for
+an in depth explanation.
+
+Integrated code from Walter Haidinger to add an "install" target
+to the Makefile.  I set the default installation target directory
+tree to /usr/local.  Binaries and manual pages are installed under
+root:root with permissions of 755 and 644 respectively.  Note that
+you may have to edit the path for the INSTALL program at the
+top of the Makefile.
+
+Changed the default path to Perl in the Makefile to /usr/bin/perl.
+This seems more common these days that the prior setting of
+/usr/local/bin/perl.
+
+Removed some OBSOLETE-flagged code from vatpkt.c.
+
+Removed some OLDWAY-flagged code from rtpacket.c handling LPC
+compressed RTP messages.
+
+Release 7.0c.
+
+13 September 1999
+
+Fixed a typo in a debug message related to busy signal generation
+in speaker.c.
+
+Completed the first cut of sflaunch (launch.c), which opens the
+audio device in O_RDWR mode and then executes sfmike and sfspeaker
+in two child processes, passing the audio I/O and control file
+descriptors to them with the -y# option.  This allows working around
+audio device drivers which don't allow two separate programs to
+open the audio device simultaneously, even if one opens read-only
+and the other write-only.  (Which remains, in my opinion, a
+stone bug.  Why should audio input and output have anything to
+do with one another, necessarily, and why must both be owned
+by the same program?)  Anyway, sflaunch should allow those with
+such drivers to run Speak Freely.
+
+14 September 1999
+
+Removed a redundant definition of BUFL in soundbyte.c.  It is
+defined in speakfree.h, which soundbyte.c includes.
+
+Removed the confusing SGI audio driver from the end of soundbyte.c
+and placed it in its own file, audio_sgi.c.  Renamed the former
+hp_audio.c to audio_hp.c.  The intent is that all future drivers
+for non-device-file audio will be named audio_something.c.  Now
+each driver only contains one set of the audio interface functions.
+
+Several Speak Freely source files used the <ctype.h> functions
+such as isspace(), tolower(), but there was no include of <ctype.h>
+in speakfree.h.  Fixed.  (This didn't cause a problem on any known
+platform, but it generates lint natters.)
+
+In half duplex mode, mike.c did not call soundflush() on the first
+transition between Pause and Talk mode.  On some platforms,
+particularly Solaris (which has a large input buffer), this
+could cause in a long transmission of sound received before
+the user made the switch to talk mode.  Fixed.
+
+Release 7.0d.
+
+15 September 1999
+
+Added g711.o to the list of object files required to build sflaunch
+when -DNEEDED_LINEAR is defined.  (Fix supplied by Jean-Marc
+Orliaguet.)
+
+18 September 1999
+
+Fixed a couple of typos and troff formatting uglies in the manual
+page sflaunch.1.
+
+Made Linux the default settings in the Makefile.
+
+The "closing audio device" debug message at the end of launch.c
+appeared even if the -d option was not specified.  Fixed; I didn't
+notice this until testing on Linux since the message is only
+compiled in when AUDIO_DEVICE_FILE is defined, and I'd been
+testing on SGI, which does not define this flag.
+
+Release 7.1.
+
+13 June 2000
+
+Integrated the tkspeakfree-0.1 Tcl/Tk GUI front-end by Martin
+Goellnitz and Shawn Pearce in the CONTRIB/tkspeakfree-0.1.  This
+directory tree includes duplicate copies of the ring.au and
+busy.au files included in the main Speak Freely directory, which
+I left as-is rather than fooling with links so as not disrupt
+anything.
+
+Integrated robustness fixes for audio initialisation in soundbyte.c
+submitted by Dave Mielke.
+
+Removed some long-disabled #ifdef OBSOLETE code from soundbyte.c and
+mike.c.
+
+Integrated fixes by Rod Roark to correct the following problems in
+sfreflect (as explained by Rod).
+
+    *  The code to update the HTML file is not always invoked on a
+       connection.  Fixed by the patch.
+
+    *  A user connecting without an email address may show up in the
+       display with some other user's email address.  Fixed by the
+       patch.
+
+In addition, Rod notes the following limitation in sfreflect:
+the user who runs the program should have an entry in /etc/passwd.
+
+    Sfreflect appears to depend on the user name (as in the 5th field
+    of /etc/passwd) for uniquely identifying users.  In particular if
+    the name of the user running the sfreflect process is empty, then
+    any other user passing in an empty name (such as someone using SF
+    for Windows) is not recognized as a new user.  The workaround is
+    to make sure the user running sfreflect has a suitable user name
+    in /etc/passwd.
+
+Release 7.2.
+
+3 August 2001
+
+Integrated a fix from Ivan Popov which corrects face file transmission
+when the connection is encrypted.
+
+29 September 2001
+
+Swept through the lpc10 subdirectory and eliminated all warnings
+from a "gcc -Wall" build.  This revealed three genuine errors in
+lpc10/gham84.c which were, however, in code which due to how
+lpc10 is used in Speak Freely, was never executed.  I added two
+new include files to the lpc10 directory: lpc10lib.h which defines
+all the internal functions of the library, and lpc10.h to define
+the initialise, encode, and decode functions used by those who
+treat it as a (very) black box.  Connoiseurs of bad C
+machine-translated from FORTRAN should take a look at the call on
+vparms() at around line 162 of lpc10/voice.c.  Here it takes an
+argument array which is declared as "int vwin[2][AF]" and
+passes it to a function which declares it as "int *vwin".
+God help you if you pass a dynamically created array of pointers
+to row items.  Fortunately, as long as the array is a monolithic
+storage block, the C standard prescribes that it will be stored
+in the order this code assumes it will.
+
+Well, with all that fixing, LPC10 encoding is still broken
+on Lysander.  Decoding works fine when I send LPC10 from
+another machine.  I'll get back to this after I slay another
+couple hundred warning messages.
+
+Added an include of the new "lpc10.h" file to the master include
+list in speakfree.h and added -Ilpc10 to the CFLAGS in the
+Makefile.  This provides prototypes for the LPC-10 functions
+to mike.c and speaker.c.
+
+Included <unistd.h> in speakfree.h.  This cleans up numerous
+implicit declaration warnings for functions like getpid(),
+fork(), etc.
+
+Cleaned up warnings and added prototypes in the des library.
+Added a des/des_sf.h file to declare prototypes of functions
+exported from des.c and included it in speakfree.h.
+
+Fixed warnings in idea/idea.c and added prototypes to
+idea/idea.h, which is now included by speakfree.h.
+
+Included <string.h> in xd.c to get rid of a warning and added
+a prototype for xd() to speakfree.h.
+
+Added prototypes for rtpacket.c, g711.c, html.c, vatpkt.c to speakfree.h.
+Removed an unreferenced variable is isvat() in vatpkt.c.
+
+2001 September 30
+
+Fixed warnings in reflect.c.  One warning remains about a
+reference to cuserid() which is documented as being defined
+in <stdio.h> but is, in fact, defined on Linux only if
+__USE_XOPEN is defined.  This function is being discouraged,
+so it's time to dig around again and see what alternatives
+exist and on what systems they work.
+
+Fixed warnings in echo.c, lwl.c, lwld.c, launch.c.
+
+Added prototypes for functions in soundbyte.c.
+
+Made the pointer to the buffer to dump in xdsub.c a
+void * so any pointer may be passed.  It it casted
+to an unsigned char * for the actual dump.
+
+Added prototype of sf_usleep() in usleep.c.
+
+Removed some unused variables and cleaned up #ifdefs in
+soundbyte.c.
+
+Added prototypes for rate.c.
+
+Added nugatory initialisation of two stack variables in
+adpcm/adpcm-u.c to avoid "uninitialised" warnings due
+to GCC's not comprehending the logic of how they are used.
+Converted function definitions to ANSI and removed non-ANSI
+definitions in adpcm/adpcm-u.h.
+
+Shuffled some code around in blowfish/bftest.c and added
+an include of stdlib.h to blowfish/bfspeed.c to avoid
+warnings.  Neither of these test and benchmark programs
+are included in Speak Freely, but we build them anyway.
+
+Added an include <sys/stat.h> to speakfree.c.  It's needed
+to define fchmod() in speaker.c.
+
+Deleted great snowdrifts of code that's been #ifdef-ed off
+for half a decade in vox.c, prototyped the remaining, and included
+the remnant of vox.h in speakfree.c.
+
+Added prototypes for deskey.c to speakfree.h.
+
+Cleaned up warnings in mike.c.
+
+Moved prototypes for functions in common.c to speakfree.h;
+eliminated common.h.
+
+Renamed setkey() in the des directory as setkey_sf() to avoid
+conflicts on systems which define the setkey() from
+the crypt() package in one of the headers we include.
+
+Went ahead and eliminated the calls on cuserid() in the
+various implementations of makeSessionKey().  Linux
+distributions are in the process of discouraging the
+use of this function and the recommended alternatives
+all require support of <pwd.h> which is a little more
+bleeding edge than I'm inclined to use for so trivial
+a purpose of randomising a session key, at least until
+we have autoconf to figure out what is really available
+on the target system.  (And don't hold your breath
+waiting for *that*--it is a *huge* amount of work to
+implement throughout Speak Freely, libraries included.)
+As it turns out, since the mapping from user ID's, which
+we already include in the hash, to user names is one-to-one
+on a given system, including the user name actually
+contributes nothing to the entropy of the session
+key (since we already include the host and domain name
+and user ID, which should be globally unique).
+
+Byte counts printed in the "Sent x samples from f in d bytes"
+message in the -d option output from mike.c when sending a
+sound file were garbage on little-endian platforms.  The
+code thought sendpkt() left the sound buffer in network
+byte order when, in fact, it restores fields in the sound
+buffer to host byte order in all circumstances.  Also, the
+format specified the byte count as an int when, in fact,
+it is a long.
+
+2001 October 1
+
+Time for an update on the ongoing LPC10 soap opera....
+With the LPC10 source  from 7.2a and GCC 2.96, sfspeaker
+correctly decodes LPC10 sent from another platform, but
+incorrectly encodes LPC10.  The same LPC10 source code,
+compiled on the Sun or SGI works correctly in both encode
+and decode modes.  (This is not a byte-order problem, or
+at least not an obvious one, since essentially the same
+LPC10 code works in the Windows version, and has been
+known to work with earlier versions of EGCS compilers.  I
+was hoping it was a code generation problem which would be
+resolved in the process of getting rid of all the -Wall
+warnings but no such luck.)
+
+Well, that's interesting.  Just as a lark, I copied over
+the LPC10 directory from the Windows version, which differs
+primarily in containing various work-arounds for natters and
+bad code generation in half a decade's twilight struggle with
+various versions of Monkey C.  With a few twiddles to change
+path names of header files and the like, the sucker compiled
+and, by golly, worked!  And, with a little more tweaking, it
+compiled and worked on the SGI.  Okay, at the moment, the
+working one (with warnings and K&R functions in code) is in
+"lpc10", the old one is in "lpc10_old", and the nice clean
+ANSI version which doesn't encode correctly anywhere is in
+"lpc10_new".  I'm going to get some sleep before trying to
+bring all this together.
+
+Integrated all of the prototypes and compiler warning fixes
+from the lpc10_new directory into the paranoid version
+derived from the Windows code in lpc10.  Amazingly, it now
+compiles without warnings on Linux and works identically
+on both Linux and the SGI.  There are numerous compiler
+warnings on the SGI due to the (perfectly legitimate)
+trick used in this FORTRAN-derived code of passing
+element -1 of an array as a pointer argument to a
+function so it may be addressed with indices starting
+at one.  Unless I think of some elegant way to wiggle
+around this I'm inclined to leave it as-is, since
+without a total rework of the code the solution would
+probably be worse than the warnings.
+
+Added a new "speech.au" test file to the main directory.
+This is the male/female voice database used to test the
+CELP CODEC.  It was originally sampled at 8 KHz, 16 bit,
+two's complement; I re-encoded it as an 8 bit mu-law .au
+file which can be sent by Speak Freely.
+
+2001 October 2
+
+Fixed some signed/unsigned char natters which made it past
+"gcc -Wall" but caught the eye of the SGI compiler in
+mike.c, reflect.c, and speaker.c; all were harmless.
+
+The SGI compiler and library fretted over our defining
+NULL as 0 after including <stdlib.h> in des/des.c.  I added
+an include of <stdio.h> which is guaranteed to define NULL
+and removed the definition in the file.
+
+2001 October 10
+
+Completed the initial integration of CELP 3.2a.  (CELP
+stands for "Code-Excited Linear Prediction", and this
+implementation is compliant with FS-1016.)  The source
+code for the codec is kept in the "celp" subdirectory, and
+builds as a single file, "celp.o" with externalised functions
+celp_init(), celp_encode(), and celp_decode(), whose functions
+you can probably deduce.  All of the multitude of separate
+files and their global symbols are pulled into the celp.c
+external interface program via the "celpfiles.h" include.
+All internal functions and the variables they share are
+static, with the functions declared in "celplib.h", and
+thus do not pose a risk of clashing with symbols
+in the programs which use the codec.
+
+"Why didn't you use the ever-so-clean CELP 3.3 library
+rather than the ancient FORTRAN-derived and unoptimised
+CELP 3.2a?"  Because CELP 3.2 sounds better.  CELP 3.3 is
+a joy for the programmer, but running sound through it
+results in low-level cruft which none of the build options
+gets rid of.  I tested the two libraries on three different
+architectures, all the options, etc. and the results were
+conclusive--CELP 3.2a is superior in sound quality.  If I
+were a CELP genius with unlimited time, I'm sure I could
+run down the difference, but I'm neither, so for the moment
+I've defined a clean interface to the ugly CELP 3.2a which will
+permit replacing it in the future with a more modern version
+should one appear which is its equal or superior in fidelity.
+
+CELP supports optional forward error correction.  Since
+our packet transfer protocols are checked, there is no
+need for this, so the code to support it was disabled with
+ifdef's on PROTECT.  If you define this system, the code
+will be compiled in and may then be selected or suppressed
+with an argument when celp_init() is called.
+
+You select CELP encoding with the "-celp" command line option
+of sfmike.  CELP encodes frames of 240 audio samples into 18
+byte encoded frames.  In CELP mode, sound buffers contain
+1920 raw samples, which are encoded into 146 byte packets
+(144 bytes for 8 CELP frames, plus our traditional
+"decoded length" short at the beginning).  CELP encoded
+packets have the new fCompCELP bit set in the compression
+field.  You may use CELP compression only with Speak Freely
+protocol; it may be combined with "-c" 2X compression, but
+not with any other compression mode.  All encryption modes
+may be used with CELP compression.
+
+Added CELP mode to the log and status displays in echo.c
+and reflect.c but I haven't tested it yet.
+
+2001 October 11
+
+Cleaned up the Makefile to use shell iteration for the "clean"
+target, permitting additional operations on all the subdirectories
+without copy after copy of them as make instructions.
+
+Modified make instructions for all of the subdirectories so the
+C flags from the parent Makefile are propagated to compiles of the
+subdirectories.  This involved cleaning up various dust of the
+ages in the individual subdirectory Makefiles to ensure they
+didn't override the parent.
+
+2001 October 13
+
+Dribbled another drop of cleaning fluid into the polluted ocean
+which is the celp directory.  It's now possible to turn off
+all of the diagnostics CELP used to print when it saw things
+it disapproved of by building the library with the symbol
+CELPDIAG not defined in celp/celplib.h.  If this symbol is
+defined, all the diagnostics are now sent to standard error,
+as opposed to the haphazard mix of standard output and standard
+error used before.  Errors serious enough to abort CELP
+encoding (which used to exit from the program which called
+the CELP library!) now set error status codes which are
+returned from celp_encode and celp_decode.  If the value
+returned by these functions is not CELP_OK, the output buffer
+is garbage and should be ignored (in almost every case, it
+will be whatever was in the array before the function was
+called).  If you need details of where CELP failed, you may
+check the specific error codes defined in celp/celp.h.
+
+The CELP library used to contain five separate definitions of
+the constant Pi, including some which computed it on every
+call of a function using (4 * atan(1.0))!  These all now
+use CELP_PI, which is defined in celplib.h.
+
+CELP-encoded packets received with bad decryption keys could
+crash sfspeaker due to the lack of a reality check for the
+"decoded length" field in the encrypted sound buffer.  Fixed--you
+may get science fiction sound effects, but sfspeaker should
+soldier on anyway.
+
+Implemented LPC10-style "packet stuffing" for CELP.  If the encoded data
+in a packet are 16 bytes or more, the last 16 bytes are stuffed into
+the legacy "sendinghost" field and the size of the packet sent
+reduced accordingly by mike.c.  When the packet is received, speaker.c
+"un-stuffs" it, appending the bytes jammed in sendinghost to the end
+of the sound buffer before anybody looks at it.
+
+2001 October 15
+
+Verified that face data transmission works with all encryption
+modes enabled.
+
+Built on Solaris (with Sun WorkShop C 4.2) which found a natter
+in soundbyte.c which defined AUDIO_MIN_GAIN and AUDIO_MAX_GAIN
+whether it needed to or not for compatibility with ancient
+SunOS libraries.  The definitions in <sys/audioio.h> have the
+same numerical values but are now enclosed in parentheses for
+some dumb reason: "(0)", not "0".  I made the definitions in
+soundbyte.c conditional on the symbols' not being defined by
+the header file.
+
+Sun's make found a syntax error in the clean target of the main
+Makefile which GNU make let by--fixed.
+
+Fixed a number of natters from the Sun compiler with the "-v"
+option for extra syntax checking.  The vast majority were for
+unsigned long constants with the 2^31 bit set not suffixed with
+"UL".  A few squawks remain due to Sun libraries not defining
+getdomainname(), thread functions in lwld.c reported as lacking
+return statements (well, duh), and the like.  The build is free
+of warnings if the "-v" option is not used.
+
+Indulged in a little cowboy optimisation in the celp directory.
+If you're inclined to speed up CELP encoding (decoding takes
+a trivial amount of time), you need look no further than the
+files cgain.c and pgain.c.  Essentially all of the time
+goes into these extraordinarily floating point intense
+functions which are called a multitude of times for each
+frame encoded.
+
+Compiling with GCC's -Wall -O4 options flushed out several
+"possibly uninitialised variable" warning, two of which, in
+functions in speaker.c, lwld.c, and reflect.c could
+actually, in very improbable circumstances, lead to errors.
+I fixed all of them, initialising some variables to get
+rid of warnings where the compiler didn't understand the
+control flow which guarantees they'll actually always be
+initialised before the first reference.
+
+Added documentation for -celp encoding to sfmike.1 and
+sfspeaker.1.
+
+2001 October 16
+
+Tested on SGI IRIX 6.5--OK.
+
+Rewrote the celp/celp_test.c program to be byte order independent.
+This permits testing the CELP library with input and reference output
+files which don't depend on the machine's byte order.  This affected
+only the 16 bit two's complement PCM audio files--the CELP encoded
+file was already independent of byte order.
+
+Added a "distclean" target to the CELP Makefile to get rid of the
+test files which have been banished to the testdata.zip
+archive.  Added documentation to explain where to obtain this
+archive and how to use it.
+
+Added an optional CELPFLAGS declaration to the main Makefile which
+permits specifying additional options for the compilation of the
+CELP codec; this thing is so compute-intense that exotic optimisations
+can have a substantial payoff.  The options suggested in the Linux
+section are tweaked to produce the best performance I've been able
+to manage on GCC 2.96 on an Intel Pentium.
+
+Some files, particularly in the codec and encryption subdirectories,
+had odd permissions which might cause trouble if multiple people are
+sharing a source code directory.  All source files now have permissions
+of 644, and directories and executables (shell scripts, etc.) 755.
+
+The scheme used by mike.c to jam the LPC10 Robust Mode sequence number
+into the length field of the sound buffer didn't work on little-endian
+platforms (although speaker.c handled this field correctly on all
+platforms).  Fixed.
+
+2001 October 17
+
+The fCompLPC10 flag was missing from the fCompressionModes mask in speakfree.h.
+The only possible consequence of this would be sfspeaker's omitting the
+"Host sending in LPC10" message if a host switched from sending in
+uncompressed to LPC10.  Fixed.
+
+Compression modes displayed by echo.c when the -d and/or -v options were
+specified were incorrect when the echo server was running on a
+little-endian platform.  I added code to convert the compression field
+in the sound packet to host byte order before calling compressionType()
+which requires this to have been done.  Since we're just going to bung
+the packet back onto the network when it emerges from the queue, I
+convert the compression field back to network byte order after we're
+done with the diagnostic output.
+
+Naturally, reflect.c had the same problem displaying compression modes
+on little-endian machines; fixed the same way as in echo.c.
+
+Implemented "simulated transport error" support in echo.c.  When
+testing error tolerance algorithms (robust transmission,
+dropped packet interpolation, shuffled packet reordering, etc.)
+it's nice to be able to test the algorithms in a controlled
+environment without actually seeking out a lousy connection.
+The new "-Z" option on sfecho allows you to configure it as
+an "Echo Server from Hell" which misbehaves in various ways
+Internet connections are prone to.  The option takes three
+integer arguments:
+
+    -Zdrop%,shuffle%,depth
+    
+with specify the following parameters:
+
+    drop%   	The specified percentage of packets received
+    	    	will be dropped at random.
+    shuffle%	The given percentage of packets will be shuffled
+    	    	in order when returned to the sending host(s).
+    depth   	Maximum out-of-order created when packets shuffled.
+    
+Consider the specification "-Z5,10,8".  When a packet arrives, a
+pseudorandom number between 0 and 100 is generated.  If the number
+is less than or equal to 5 (drop%), the packet is simply discarded as if
+we'd never seen it, simulating loss of 5% of packets in transmission.
+If the packet survives this, it is placed into the queue to be echoed
+to the sending host.  When the time comes to return it, another
+pseudorandom number in the range 0-100 is computed and if this one
+is less than or equal to 10 (shuffle%), yet another pseudorandom
+quantity in the range from 1 to 8 (depth) is generated.  The packet
+at the head of the queue to be returned is exchanged with the
+packet chosen at the random depth, resulting in the two packets
+being returned in each other's stead, at the same time the packets
+would have been returned if not shuffled.  Any packets on the queue
+are vulnerable to shuffling: while one usually concentrates on
+robustness in audio packet transport, all UDP packets are equally
+vulnerable to transport errors, and properly simulating this allows
+testing race conditions where, for example, a BYE packet gets shuffled
+before a heartbeat sent immediately before the user closed the
+connection.  If you don't specify any arguments to the -Z option
+it will have no effect since the defaults for drop% and shuffle%
+are both zero.  If depth is omitted, it defaults to 10 packets.
+If either dropping or shuffling are enabled, a prominent warning
+message is written on standard error when sfecho is started--you
+don't want to accidentally set these modes on a production echo
+server!
+
+The Makefile in the celp directory contained a blank line with
+a space on it which befuddled make on the SGI--fixed.
+
+Totally revamped "robust transmission" mode in mike.c and speaker.c.
+On the mike.c side, you may now enable robust mode (packet duplication
+with a serial number modulo 256) for any compression mode (but only
+in Speak Freely protocol--not RTP or VAT) by specifying the
+"-ROBUSTn" command line option, where n is the number of
+duplicate packets you wish to send (maximum 8).  When robust
+mode packets are received in speaker.c, the distance between
+the serial number of the packet received and the previous packet
+is computed modulo 256 and the packet is discarded if its
+distance d is -16 < d <= 0.  This rejects duplicate packets,
+even if they have been shuffled out of order by up to 16,
+while minimising the dead time should a rogue packet
+reset the last sequence counter to a maximum of 16 packet
+times.  If packets are received out of order, then, packets
+prior to the out of order packet will be discarded unless
+their sequence numbers (modulo 256) are more than 16 older
+than the last packet played.  If the earlier packet eventually
+arrives, there will be a short break-up in the sound, but that's
+a lot better than playing packets out of order, which results in
+gibberish.
+
+Better yet would be to integrate robust transmission with jitter
+compensation, which would permit inserting sorting packets received
+out of order while they were waiting in the jitter compensation queue.
+Unfortunately, this would require major surgery to speaker.c because
+at the moment jitter compensation is done at the very end of the
+audio pipeline, right before the samples are sent to the audio
+output device (and thus in a manner which is 100% independent of
+the protocol, compression, and encryption mode of the packet
+in which they originated), while robust packet order re-sorting needs
+to be done at the very start--immediately after the packet is
+received.  Given that packet shuffling is a rather rare occurrence
+on bad connections (compared to dropped packets, which the
+current scheme handles with no difficulty), I'm inclined to
+defer this refinement until I get around to rewriting speaker.c
+as a clean pipeline architecture, at which time the additional
+work to reorder robust mode packets will be the matter of a
+couple of minutes.  Still, based on testing with the echo
+server to simulate bad connections, the new implementation
+of robust mode is a vast improvement on the bonehead design
+used previously.
+
+Note that if you specify -robust mode for any protocol other
+than LPC10 and send to a user running a release prior to
+7.5, they will receive and play all the duplicate packets,
+resulting in a permanent Ma-Ma-Max Headroom style stutter.
+Other than being completely unintelligible, no harm will be
+done.
+
+Tested building lwld.c in multi-threaded mode on Linux--all
+I needed to do was define -DTHREADS and link with -lpthreads
+and everything worked fine...amazing.  (This is with GCC 2.96
+and kernel 2.4.2-2 installed from Red Hat 7.1.)  Just one
+little detail--the killserv() signal handler, which is compiled
+in only on a THREADS build, ran into the -Wall warning for
+signal() functions declared with an explicit void argument
+list.  I changed it to a "()" argument list as required to
+sneak past the definition of signal() on all the
+libraries and compilers.
+
+Got rid of a silly -Wall warning message in the little C program the
+Makefile uses to determine the socket arguments to plug into
+sfvod.pl.
+
+Preliminary release of 7.5 posted.
+
+2001 October 18
+
+I should mention a trick that comes in handy when you're
+optimising compression and encryption algorithms or testing
+various compiler options to obtain the best performance.
+Suppose you're interested in how quickly a certain machine
+performs CELP compression with certain compiler options.
+Using a version of sfmike built with those options, use
+the command:
+
+    time -p ./sfmike -celp 10.1.1.1 speech.au
+    
+which compresses the "speech.au" sample audio file supplied in
+the main directory to the nonexistent network address 10.1.1.1
+(any IP address with 10 in the most significant byte is an
+invalid Internet address, although some sites use it for local
+networks behind a firewall).  Depending on the system, you
+may or may not need to specify the "-p" option on "time"
+to obtain output in the following format:
+
+    real 22.95
+    user 3.04
+    sys 0.01
+
+This indicates that 3.04 seconds of CPU time were used by Speak
+Freely to encode and transmit the speech.au file.  The real
+(wall clock) time is so much longer because Speak Freely waits
+between packets when sending an audio file so as to transmit
+them at approximately the same rate as if they were live audio.
+The "speech.au" file actually contains 22.56 seconds of
+audio, so the timing indicates that the CPU runs the CELP
+compression algorithm more than 7 times faster than it needs
+to in order to compress in real time.  You can use the same timing
+command on sfspeaker, sending it speech.au from the same or
+a different machine, to time decoding or decryption performance.
+The length of the audio in speech.au is calculated as follows:
+the total file length is 180504 bytes, of which the first 24
+bytes are the header which begins every .au file and the
+remaining 180480 bytes are the audio.  The file was recorded at
+8000 one byte mu law samples per second, so the duration is
+thus 180480/8000, or 22.56 seconds.
+
+2001 October 19
+
+The install target in the main Makefile stripped its gears attempting
+to strip sfvod which is a Perl script, not a binary executable.  I
+split the PROGRAMS definition into separate BINARIES and SCRIPTS
+definitions, the latter of which are installed without the "-s"
+option by install.  (Reported by Eugene Crosser.)
+
+2001 November 1
+
+Integrated a fix by Russell Nelson to Linux sound driver
+support in soundbyte.c for drivers which can only be opened in
+stereo mode. The code, which is only enabled when NEEDED_LINEAR
+is defined, first attempts to open the driver in monaural mode
+and, if successful, proceeds as before.  If that fails, it
+tries stereo and sets the "stereo" flag if it succeeds.  When
+this flag is set, soundplay() replicates samples in the output
+buffer to send the same audio to both channels, and soundgrab()
+discards every other sample in buffers it receives.  (Actually,
+it might be better to average samples from the two channels (in
+linear sample space), in case the input is a genuine stereo
+source, but I'm disinclined to change this without having
+access to a driver which supports stereo input to test with.)
+
+2002 August 20
+
+Integrated fixes from Ivan Popov to mike.c to correct byte
+order problems in output of GSM "toasted" files and in debug
+output.
+
+As suggested by Ivan Popov, replaced xspeakfree-0.7 in the
+CONTRIB subdirectory with the version of xspeakfree-0.8.1.b
+he supplied.
+
+2002 August 28
+
+Updated IDEA patent licensing information to reflect the current
+licensing agent.  There is no change in the licensing terms nor
+to the ability to use IDEA for noncommercial purposes without a
+license.
+
+Release 7.5.
+
+2002 October 19
+
+Created 7.6 development tree.
+
+Deleted an obscure archive file which had somehow found its
+way into the blowfish directory.  Nothing was using it.
+
+Integrated a patch developed by Johannes Poehlmann which,
+if HAVE_DEV_RANDOM is defined, includes entropy generated
+by the system's /dev/random facility into the string which
+is MD5 hashed to generate a session key in mike.c.
+The Makefile defines this by default for Linux builds, and
+I added a comment to the Solaris section noting that Solaris
+9 now supports /dev/random.
+
+2002 November 7
+
+Integrated code submitted by Wolfgang Oertl which adds support
+for the ALSA sound system on Linux.  The bulk of the code is in
+the new file audio_alsa.c, which replaces the functions in
+soundbyte.c when building with LINUX_ALSA defined.
+
+2003 January 25
+
+Replaced rate.c with the version from the current (12.7.3)
+release of SoX (sox.sourceforge.net).  This is an improved
+algorithm which avoids end of buffer problems.  I modified
+the interface to be compatible with the previous Speak Freely
+version of rate.c and made the changes required for it to
+work on buffers of mu-law single byte samples rather than
+the unsigned longs used within SoX.
+
+Changed hard coded references to 8000 as the interchange audio
+sample rate to SAMPLE_RATE, defined in speakfree.h.
+
+Added version.h as a dependency of sfvod.pl in the Makefile.
+
+Added the -f option to speaker.c to adjust output rate.  The
+adjustment can be specified explicitly, adaptively made based
+on computed sample arrival rate, or both.  To automatically
+adjust the output rate (by resampling audio about to be played
+to a lower rate if the arrival rate exceeds 8000 samples per
+second), specify the -fa option.  To specify an explicit
+adjustment to the audio output rate, use the -f option
+followed by the percentage by which to adjust the output rate.
+This value may be signed: if positive (or no sign is given), the
+output rate is increased; if negative it is decreased, and may
+contain a decimal fraction.  For example:
+
+    	-f1 	Play output 1% faster
+	-f-2.5	Play output 2.5% slower
+	
+If the -fa option is specified in addition to an explicit -f
+option, the explicit correction will be applied to the
+automatically determined rate.  Appropriate settings of the
+-f option should avoid the build-up of delay which occurs when
+receiving continuous transmission (such a broadcast or audio
+from a site running in full duplex mode) from a site whose audio
+sample rate is faster than the rate at which the receiving site
+plays audio.
+
+Alpha prerelease 7.6-A1.
+
+2003 January 26
+
+Removed conditional compilation on DYNRATE in speaker.c.  The
+dynamic output rate adjustment is now always compiled in.  The
+actual code which computes the smoothed input rate and adjusts
+the output rate accordingly is only executed, however, if
+adjustRate is set, indicating the -fa option has been specified.
+
+Integrated Russell Nelson's alignment fixes to rtpacket.c, which
+replace gnarly references to pointers to short and longs which
+do not meet the alignment requirements of processors such as
+the Intel StrongARM.  The new code assembles and stores all such
+values as individual bytes and should be portable to all
+architectures.
+
+On inspection, it turns out the VAT packet translation code in
+vatpkt.c had the same alignment problems as those fixed by
+Russell Nelson in rtpacket.c.  This wasn't apparent since nobody
+uses VAT protocol any more, but I went ahead and fixed them.  In
+the process, I discovered that the code for L16 (16 bit
+linear PCM, mono or stereo, at CD audio [44.1 kbps] rate)
+translation has been broken since it was first installed in
+1996.  Nobody ever noticed, since neither Speak Freely nor
+any other network telephone I'm aware of ever uses this mode
+(I mean, 44.1 16 bit *uncompressed*--get real!).  Anyway, I
+fixed the alignment and byte order problems in the L16 code,
+but I'm still not sure the rough and ready rate conversion
+code is correct.  At least it shouldn't garble the audio or
+crash should somebody manage to send us packets in L16 format.
+
+2003 January 31
+
+Added a #define of OVERDRIVE_SOUND_FILE in mike.c which,if
+set to a value other than 1, adjusts the rate at which sound
+files are transmitted by the given factor.  A setting of 2
+sends the file twice as fast as the estimated rate at which
+it will be played; a setting of 0.5 at half the rate.  This
+permits testing adaptive output rate adjustment intended to
+avoid long delays when receiving audio from a site which is
+transmitting continuously at a rate faster than audio is being
+played.
+
+2003 February 9
+
+Integrated "const" attributes on invariant data tables and
+function arguments in the celp directory from the Windows
+version, as well as a few code cleanups.
+
+2003 February 28
+
+Added support for FIPS-197 Advanced Encryption Standard (AES),
+(http://csrc.nist.gov/encryption/aes/), using the public
+domain implementation developed by Brian Gladman
+(http://fp.gladman.plus.com/cryptography_technology/rijndael/)
+to mike.c and speaker.c.  You can either specify a 128 bit key
+as a text string (which is hashed with MD5 to obtain the
+actual binary key) using the "-ba" option, in the same manner
+as Blowfish and IDEA, or you can use the "-bx" option to specify
+a hexadecimal key which, depending on the number of digits
+given, is 128, 192, or 256 bits in length.  If fewer digits
+are given than fill the next larger key size, the specified
+digits are left justified and the balance of the key is filled
+with zeroes.  The AES encryption library is kept in a new
+aes directory, which includes all of the modules from the
+distribution, as well as a new aes_test.c test program
+which I wrote to permit the functions used in Speak Freely
+to be tested without the need for a C++ compiler.
+
+Building on the SPARC failed because the definition of
+format at the top of soundinit() in soundbyte.c which is
+only referenced when NEEDED_LINEAR is defined was not
+condition on that tag.  Consequently, it attempted to reference
+a symbol, AFMT_S16_LE, which is not defined by the Solaris
+audio system.  Fixed.
+
+2003 March 1
+
+Added recommended options for SGI MIPSPro builds in the
+Makefile to suppress silly warnings due to "compile-time
+subscript checking" in the C compiler and from the linker
+when a library is specified which doesn't contribute any
+code to the link.
+
+Built and ran end-to-end tests across Linux, Solaris/SPARC
+(Sun compiler), and IRIX/MIPS (SGI MIPSPro compiler),
+exercising CELP and AES.  Everything worked fine.
+
+Added the ability to specify a 256 bit AES key as two
+independent ASCII key strings passed to the -BA option,
+separated by a "+".  The 256 bit key is the concatentation
+of the two 128 bit MD5 hashes of the key strings on either
+side of the plus sign.  A 256 bit key is generated only
+if the -BA argument contains an embedded plus sign; a leading
+or trailing plus sign is part of the key.  If more than
+one plus sign is embedded in the argument, the
+leftmost acts as the key separator.  For example, you
+might specify a 256 bit key as "-BAsqueamish+ossifrage".
+In practice, each component of the key should have at
+least 128 bits of entropy.
+
+Modified makeSessionKey() in mike.c and speaker.c to never
+use idearand().  The MD5-based algorithm is perfectly adequate
+by itself (and is used, in any case, in a no-CRYPTO build),
+and eliminating IDEA avoids any patent entanglement for
+applications which require a session key.
+
+The code in mike.c which appends data from /dev/random to the
+string from which the MD5 hash is computed could fill the
+string so close to the end that the subsequent append of
+additional entropy for the second could overflow the buffer.
+I restricted the amount of data read from /dev/random to
+guarantee subsequently appended data will fit in the buffer.
+
+2003 March 2
+
+Modified the ASCII session key generator used by the "-E"
+option in mike.c to evenly distribute the letters in which
+the 4 bits of entropy per character are expressed around the
+alphabet rather than always using the first 16 letters.  This
+doesn't necessarily add any entropy (although "ent"
+[http://www.fourmilab.ch/random/] thinks it does), but it
+makes the keys look better and avoids silly questions.  Sure,
+we could express the key in fewer letters by doing multiple
+precision base 26 division but given that most people are
+simply going to cut and paste these keys, I don't think
+that's worth the added complexity in an extremely obscure
+feature.
+
+If LPC (-lpc) and Simple (-c) compression were selected
+simultaneously, mike.c failed to double the input sample
+buffer size, resulting in transmitted packets which were
+too small to be efficient; fixed.  Note that this fix is
+compatible with all previous versions, and that the Windows
+version did correctly adjust the sample count for this
+combination of modes.
+
+Added additional bullet-proofing to the audio packet
+decompression performed by playbuffer() in speaker.c.
+Before entering the decompression code, a check is made
+for more than one supposedly mutually-exclusive compression
+mode being set.  If that passes, for each kind of
+decompression, the compressed length is checked against
+the maximum ever expected (which is guaranteed not to
+overflow the decode buffer) and, where appropriate, that
+the compressed data is an even number of compression
+frames.  Failing any of these tests prints a message on
+standard error which identifies the sending host and the
+nature of the error and discards the packet.  This
+corrects the ADPCM buffer overflow exploit reported by
+the Hackademy Audit (http://www.thehackademy.net/audit.php).
+
+2003 March 3
+
+As discovered in the Hackademy Audit, when PGP key exchange
+was used, speaker.c created a temporary file in /tmp which could
+potentially be exploited by a race condition via a symbolic
+link to overwrite another file or, if the user's umask() was
+set insecurely, be read by a third party on the local system,
+compromising the key.  I added secure temporary file
+creation routines in the new file tempfile.c, based on
+a modified version of the code given in:
+
+    http://www.dwheeler.com/secure-programs/Secure-Programs-HOWTO/avoid-race.html
+    
+which adds the ability to leave the file to be unlinked later
+by the caller and to retrieve the full path name as generated
+from the environment variables TMPDIR or TMP.  I modified
+the code which invokes PGP to exchange the session key to use
+this new create_tempfile_in_tempdir(), keeping the file open
+until it's been processed by PGP, preventing a "jump-in"
+race condition.  Since the umask() of the file is forced to 077,
+the contents of the file should be secure against anybody other
+than the super-user.
+
+The same temporary file risk existed for the files in which
+face data were saved for display with the external viewer program.
+I modified the face display code in speaker.c to use
+create_tempfile_in_tempdir(), keep the face file open
+until the viewer terminates, then delete it.  This resolves
+the Hackademy Audit issues of possible buffer overflow
+composing a face file name from a host name, and the risk
+of a host name resolving to a string which might permit
+directory traversal.  As no exogenous input contributes to
+the face file name, these issues can be closed.
+
+Hackademy reported a potential vulnerability due to the
+validation of packet length versus contents being bypassed when
+the faceRequest bit was set in the packet header. That
+particular test was due to my having unwisely opted to re-use
+the packet payload length field for the address of the data
+being requested in a face image file, which means it cannot be
+tested against the received packet length as for other
+packets.  Fortunately, these faceRequest packets are all
+precisely the same length as they bear no payload, and have a
+unique value in their flags (a.k.a. "compression") field.  I
+added a test which verifies these, which should stop any
+attempt to spoof downstream code long before it gets there. 
+Packets which fail this validation are reported to standard
+error and dropped.
+
+The Hackademy Audit revealed a potential buffer overflow exploit
+if a VAT protocol client sent a packet with a user name longer
+than the 256 byte stack buffer used to edit it for display
+when showhosts is set.  I rewrote the code to truncate the
+user name in the packet at 255 characters if it's longer than
+that.  The uname field in the connection is actually 4096
+characters, but only a malicious client will attempt to send
+a VAT packet with an ID longer than 255 characters, so there's
+no reason to do anything beyond protecting ourselves against
+such an attack.  Note that we don't have to worry about this
+kind of buffer overflow when parsing items from RTP SDES packets,
+as their length is constrained to 255 bytes (see copySDESitem()
+in rtpacket.c).
+
+Hackademy claim that the fLoopback facility (which causes Speak
+Freely packets to be echoed back to the sender) has the
+potential for abuse since UDP packets can be sent with forged
+source IP addresses.  Well, yes...but here I'm going to quibble.
+First of all, the fLoopback occurs only after the packet has passed
+all of the aforementioned consistency checks and been deemed a
+valid Speak Freely packet.  Given that, the only kind of sites
+you're likely to be able to attack with spoofed loopback
+packets is other Speak Freely sites, which you can attack
+far more efficiently by just sending the packets directly
+as opposed to finding a site to bounce them off with loopback.
+Sure, you can use this to disguise your identity, but then
+you might just as well forge the identity in the first place
+and dispense with the loopback cut-out.  The Speak Freely
+loopback facility cannot be used as a packet multiplier for
+denial of service requests--it's one packet in, one packet out,
+so the rate at which loopback packets are sent is limited
+to the rate at which they can be delivered to the site
+reflecting them, which cannot be greater than the bandwidth
+between the attacker and the victim.  So...unless anybody
+finds a flaw in this argument, or produces evidence that
+the fLoopback facility is, in fact, being abused, I'm going
+to leave it as-is for the moment.  (N.b.  It would not be
+a Big Thing if fLoopback were simply disabled.  Almost
+nobody uses it, as it's much easier to test with the public
+echo servers which delay audio before sending it back.
+The fLoopback gimmick dates from 1991, when it was the
+only practical way to test performance on point to point
+leased line connections.
+
+Fixed a couple of printf format/argument quibbles detected by
+GCC when mike.c was built with PGP_DEBUG defined.
+
+The same temporary file risk discovered by Hackademy in
+speaker.c also existed in mike.c's code which invokes PGP
+to encrypt session keys for transmission to connected parties.
+I rewrote the code to use the new create_tempfile_in_tempdir()
+function in in tempfile.c and changed the logic so the newly
+created temporary file is not closed until PGP is finished
+with it.
+
+Removed obsolete code commented out with OLDWAY in rtpacket.c
+and vatpkt.c which was replace with alignment-insensitive
+code.
+
+Re-tested VAT and RTP protocols with DES encryption, just
+because it's been a while and to make sure none of the sanity
+checks mess something up.  It worked fine.
+
+My hokey half-curses/half-printf code which prompts the user
+for the PGP secret key password when the -Z option is
+specified for sfspeaker without an argument failed to
+print the prompt while in curses mode on Linux.  I
+changed the code to use curses printw() to issue the
+prompt.  When PGP_DEBUG is defined, the -Z option code now
+echoes the secret key, however specified.
+
+Added the ability to use GPG (http://www.gnupg.org/) instead
+of PGP for public-key exchange of a session key.  To configure
+for GPG, compile Speak Freely with GPG_KEY_EXCHANGE defined
+(this affects mike.c and speaker.c).  Operation is precisely
+the same for PGP and GPG; you can specify the secret key
+when required by sfspeaker from the keyboard, via the -Z
+option, or by setting the PGPPASS environment variable.
+(Note that the latter two options, while convenient, have
+potentially serious security risks.)
+
+GPG encryption of session keys may result in a packet longer
+than 512 bytes.  Due to problems in the age of fragging, this
+generated a warning message when mike.c sent the packet.  Since
+this shouldn't be a problem these days, I made the warning
+message appear only when PGP_DEBUG is defined.
+
+2003 March 4
+
+Half-duplex muting packets sent between sfmike and sfspeaker
+when compiled with HALF-DUPLEX ran afoul of the packet length
+sanity check due to an error in recognising face data packets.
+The test for face data in speaker.c looked for the faceRequest
+bit, which if meaningful only when fFaceData or fFaceOffer is set.
+I changed the test for face data to consider a packet face data
+only if one of these two bits is set.  Further, face data packets
+can, at most, be constrained to a maximum of 512 bytes.  We
+could explicitly validate the length of request packets which
+are known to have no payload, but this would contribute nothing
+to security.
+
+2003 March 5
+
+Integrated the "NAT Patch" developed by Tor-Åke Fransson.  All
+code related to the patch is conditional on "NAT_LAUNCH", which
+makes it easy to locate in mike.c and speaker.c.  This code is
+enabled by default.  I made a few cosmetic changes in the the
+code.  The option which enables NAT mode in sfspeaker is now
+-NAT:  to enable passive mode use:
+    sfspeaker -NAT
+The host behind the NAT box should use:
+    sfspeaker -NAToutside_hostname
+The sfspeaker option for specifying the compression mode
+for copies of sfmike launched in NAT mode is now "-NC", for
+example:
+    sfspeaker -NCcelp -NAT
+I added logic to forward IDEA and AES keys from sfspeaker to
+copies of sfmike it launches.  I made the code which launches
+sfmike first try to launch it from the PATH, then try the current
+directory.  By integrating this patch, I am not committing to
+supporting it forever.  After 7.6 ships, I'm going to be looking
+at the NAT issue in  detail, and I may develop a very different
+solution which will supplant the current fix.  But for the moment,
+this fix get the job done for many people, and it's just crazy to
+have to port the fix to each new release of Speak Freely and force users
+to install it.  So, the patch is now in the distribution, and
+will be carried forward with it until it's replaced by a more
+general solution for NAT hosts, should that ever happen.
+
+In launch_sfmike(), the socks[] buffer used to edit the -NAT
+command which passes the socket file descriptors to sfmike
+could overflow, leading to corruption of subsequent storage.  I
+aggravated this by replacing the original "-X" option with
+"-NAT", but even the original code could overflow if the socket
+file descriptors were more than a single digit.  I expanded
+the buffer to 24 characters to be extra safe.
+
+In launch_sfmike() the dynamically allocated hostspec buffer,
+used to pass the destination host and port numbers to the
+copy of sfmike could overflow.  It left only 7 characters for
+appending the port numbers, which can, in principle, be as large
+as five digits each.  I expanded the buffer to the size of the
+host name plus 24 characters.
+
+When launch_sfmike() composes the command line to launch
+sfmike, it dynamically allocates arguments for each destination
+host, but failed to free these buffers in the child process after
+forking the process which performs the execvp() of sfmike.
+I added code to free these buffers in the parent process before
+freeing the argument vector itself.  This code assumes, as is
+presently the case, that all dynamically allocated arguments
+appear at the end of the argument list.  If you change the code
+which composes the command line, make sure you don't run violate
+this assumption.
+
+When childterm() harvested the exiting sfmike process, it
+failed to zero sfmike_pid in the connection structure, creating
+the possibility the code would be erroneously re-executed if
+a subsequent process with the PID terminated.  I added code to
+clear sfmike_pid in childterm() and also initially when a new
+connection is initialised.
+
+Note that if the connection from the host behind the NAT box is
+terminated, the copy of sfmike launched to talk to it remains
+active until the user explicitly quits it.  If the NAT host
+makes numerous connections (for example, sending a bunch of
+sound files), each will launch a separate copy of sfmike.
+
+Alpha prerelease 7.6-A2.
+
+2003 March 18
+
+Release 7.6.
+
+2003 March 19
+
+Twiddled the "mantext" target in the Makefile to transmogrify
+vile line-ending hyphens with nonstandard codes (0xAD) to ASCII "-"
+characters suitable for inclusion in HTML manual pages.
+
+2003 March 31
+
+If an audio packet which wasn't already a multiple of 16
+characters was encrypted with both AES and a key file,
+decryption failed on the last frame of the packet because
+the key file decryption code in speaker.c only extended the
+packet to a multiple of 8 bytes, not 16 as required.  Fixed.
+
+Release 7.6a.
+

@@ -1,0 +1,164 @@
+.TH "SFVOD" 1 "3 MAR 1998"
+.UC 4
+.SH NAME
+sfvod \- Speak Freely voice on demand server
+.SH SYNOPSIS
+.nh
+.na
+.B sfvod
+[
+.B  \-aduvx
+]
+'in +5n
+[
+.BI \-l file
+]
+[
+.BI \-p port
+]
+[
+.BI \-r program
+]
+[
+.BI \-t timeout
+]
+[
+.I soundfile...
+]
+[
+.B \-
+.I "sfmike options"
+]
+.in -5n
+.hy
+.ad
+.SH DESCRIPTION
+.B sfvod
+monitors connections to a given port.
+When a user connects with Speak Freely,
+.B sfvod
+transmits an audio file or live audio to the connected user.
+.B sfvod
+allows creation of servers which play audio on demand to any user
+who connects to the host and port where a given audio file is published.
+If the
+.B SPEAKFREE_LWL_TELL
+environment variable is set to a one or more Look Who's Listening
+hosts,
+.B sfvod
+will publish its existence on those hosts.  See the ``Look Who's
+Listening'' section in the
+.B sfspeaker
+manual page for details on how to set the environment variables.
+.SH OPTIONS
+.TP 10
+.B \-a
+Transmit live audio rather than a sound file.
+.TP
+.BI \-d
+Generate debug output on standard output.
+.TP
+.BI \-l file
+Logs requests processed by the server in the
+named
+.IR file .
+The log is written in a format compatible with that of the
+NCSA HTTPD server.  If you're running multiple copies of
+.BR sfvod ,
+serving different sound files, each must write a separate log file
+which you can consolidate later.
+.TP
+.BI \-p port
+.B sfvod
+monitors the control port of the given port pair
+.RI ( port
+specifies the data--even numbered--port of the pair).  When
+a connection occurs, transmission of the specified
+sound file or live audio commences.  When a BYE message arrives
+on the control port, transmission is terminated.
+.TP
+.BI \-r program
+The named
+.I program
+is executed to transmit the message to the connected user.  The
+default program is
+.BR sfmike .
+.TP
+.BI \-t timeout
+If a remote site fails to send a BYE message, it will be timed out
+(and hence become eligible for retransmission of the sound file
+if another ID message arrives) after
+.I timeout
+seconds.  The default timeout is 30 seconds.
+.TP
+.B \-u
+Prints how-to-call information.
+.TP
+.B \-v
+Causes
+.B sfvod
+to log all connections, disconnections, and timeouts to standard
+output.
+.TP
+.BI \-x
+Dump host address records and packet contents to standard output
+in hexadecimal.
+.TP
+.B \-
+Any command line arguments that follow a single dash are passed
+directly to
+.BR sfmike .
+.SH BUGS
+.B sfvod
+is a Perl script that transmits sound by invoking
+.BR sfmike .
+In order to use it, you must have Perl installed on your system.
+.B sfvod
+was developed using Perl 4.0, patch level 36; the program has
+also been tested under Perl 5.004.
+.PP
+When transmitting sound files,
+.B sfvod
+forks a copy of
+.B sfmike
+to service each request.  If many simultaneous
+requests are received, the compression overhead of multiple copies of
+.B sfmike
+may overload the CPU and create pauses in the transmitted audio.  If
+you're using GSM compression and expect substantial
+traffic, consider pre-compressing your audio files with
+.B toast
+(found in the
+.B gsm/bin
+directory) and specifying the resulting .gsm file as the
+.I soundfile
+on the command line.
+.PP
+Multiple simultaneous requests may overload the outbound network
+capacity, leading to pauses on the receiving end.
+.PP
+When sending live audio,
+.B sfvod
+kills and restarts
+.B sfmike
+each time a host connects or disconnects.  This may result in a brief
+interruption in the audio transmission.  This could be eliminated by
+adding a signal handler to
+.B sfmike
+that causes it to update its list of hosts directly.
+.SH "SEE ALSO"
+.BR perl (1),
+.BR sfmike (1),
+.BR sfspeaker (1),
+.BR toast (1)
+.PD
+.ne 4
+.SH AUTHOR
+.RS 5
+.nf
+John Walker
+WWW:    http://www.fourmilab.ch/
+.fi
+.RE
+.PP
+This program is in the public domain.

@@ -1,0 +1,46 @@
+xspeakfree is a Tcl/Tk (wish) frontend to Speak Freely.
+
+Installing should be pretty easy.  Install at least sfspeaker
+and sfmike into a directory in your execution search path
+(environment variable PATH).
+
+Make sure you have wish (Tcl/Tk) installed in your search path as
+well.  If you don't have Tcl/Tk, its freely available from Sun at:
+	
+	http://www.scriptics.com/
+
+xspeakfree can be run directly out of this directory, but if you wish
+to have xspeakfree stored in /usr/local/bin or some other place it is
+easier to use install.sh than playing around with things to make it
+work.  So you have two options:
+
+	1) Place this directory somplace and run xspeakfree from it.
+	2) install xspeakfree into someplace like /usr/local/bin
+
+For option one, to run xpseakfree run:
+	<this directory>/bin/xspeakfree
+
+and your off.
+
+For option two, make sure you can write to the directory you wish to
+install into.  I recommend /usr/local, but its up to you.
+
+To install xspeakfree, simply run install.sh by typing this command
+line:
+
+	./install.sh <install path>
+
+<install path> should be the directory you want to install xspeakfree.
+ie:
+
+	./install.sh /usr/local
+
+then just run xspeakfree:
+
+	<install path>/bin/xspeakfree
+
+or simply 
+
+	xspeakfree
+
+if it is now in your search path.

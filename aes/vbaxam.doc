@@ -1,0 +1,327 @@
+ĞÏà¡±á
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Private Const BlkLenMax = 32        ' maximum block length in bytes
+Private Const KeyLenMax = 32        ' maximum block length in bytes
+Private Const KeySchLenMax = 128    ' maximum key schedule length in bytes
+Private BlkLen As Integer           ' actual block length
+Private KeyLen As Integer           ' actual key length
+
+Private Type AESctx     ' Type to hold the AES context data
+  Ekey(0 To KeySchLenMax - 1) As Long
+  Nrnd As Long
+  Ncol As Long
+End Type
+
+Private Type KeyBlk     ' Type to hold user key data
+ K(0 To KeyLenMax - 1) As Byte
+End Type
+
+Private Type IoBlk      ' Type to hold cipher input and output blocks
+ IO(0 To BlkLenMax - 1) As Byte
+End Type
+
+Rem Change "d:\dll_pth" in the following lines to the directory path where the AES DLL is located
+Private Declare Function AesBlkLen Lib "d:\dll_path\aes.dll" Alias "_aes_blk_len@8" (ByVal N As Long, C As AESctx) As Integer
+Private Declare Function AesEncKey Lib "d:\dll_path\aes.dll" Alias "_aes_enc_key@12" (K As KeyBlk, ByVal N As Long, C As AESctx) As Integer
+Private Declare Function AesDecKey Lib "d:\dll_path\aes.dll" Alias "_aes_dec_key@12" (K As KeyBlk, ByVal N As Long, C As AESctx) As Integer
+Private Declare Function AesEncBlk Lib "d:\dll_path\aes.dll" Alias "_aes_enc_blk@12" (Ib As IoBlk, Ob As IoBlk, C As AESctx) As Integer
+Private Declare Function AesDecBlk Lib "d:\dll_path\aes.dll" Alias "_aes_dec_blk@12" (Ib As IoBlk, Ob As IoBlk, C As AESctx) As Integer
+
+Private Sub Hex(X As Byte)  ' Output a byte in hexadecimal format
+Dim H As Byte
+H = Int(X / 16)
+If H < 10 Then
+    Debug.Print Chr(48 + H);
+Else
+    Debug.Print Chr(87 + H);
+End If
+H = Int(X Mod 16)
+If H < 10 Then
+    Debug.Print Chr(48 + H);
+Else
+    Debug.Print Chr(87 + H);
+End If
+End Sub
+
+Private Sub OutKey(S As String, B As KeyBlk)    ' Display a key value
+Debug.Print: Debug.Print S;
+For i = 0 To KeyLen - 1
+   Hex B.K(i)
+Next i
+End Sub
+
+Private Sub OutBlock(S As String, B As IoBlk)   ' Display an input/output block
+Debug.Print: Debug.Print S;
+For i = 0 To BlkLen - 1
+   Hex B.IO(i)
+Next i
+End Sub
+
+Rem The following Main routine should output the following in the immediate window:
+Rem Key =            00000000000000000000000000000000
+Rem Input =          00000000000000000000000000000000
+Rem Encrypted Text = 66e94bd4ef8a2c3b884cfa59ca342b2e
+Rem Decrypted Text = 00000000000000000000000000000000
+
+Sub Main()
+Dim Key As KeyBlk   ' These variables are automatically
+Dim Ib As IoBlk, Ob As IoBlk, Rb As IoBlk
+Dim Cx As AESctx    ' initialised to zero values in VBA
+Dim RetVal As Integer
+
+BlkLen = 16: KeyLen = 16
+
+Rem RetVal = AesBlkLen(BlkLen, Cx)          ' include if the cipher block size is variable
+
+OutKey "Key =            ", Key
+OutBlock "Input =          ", Ib
+
+RetVal = AesEncKey(Key, KeyLen, Cx)     ' set an all zero encryption key
+RetVal = AesEncBlk(Ib, Ob, Cx)          ' encrypt Ib to Ob
+OutBlock "Encrypted Text = ", Ob
+
+RetVal = AesDecKey(Key, KeyLen, Cx)     ' set an all zero decryption key
+RetVal = AesDecBlk(Ob, Rb, Cx)          ' decrypt Ob to Rb
+OutBlock "Decrypted Text = ", Rb
+Debug.Print
+
+End Sub
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+l
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+íÁ
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ÿ
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ŒBasŒ1Normal.VGlobal!ªSpaclFalse¢CreatablPre decla
+BExposeTemp
+P
+"Ke"yB"Sch†#128F‡Dkey sàchedu
+5Ç2C1œA!       
+‡Type€ AESctxÂ' Bto ho ld thB coÀ$xt dat@a
+  E@(`0 To À?- 1)!Long!   NrndÊcoúlÇE
+VI
+o L<ciphÀinput aq@(out‚“À IOÃ
+\aes.`
+£@, ÿŸãe›à#Ÿe!@œŸû\?# 3 #`3?#&#3€3##IbA#ÂW, şO‰_40D€©"wE4Sub He˜x(XAu) àpO#maBµadhexRa@1im€Qf!Üt€
+Dim HÅ`
+H =á¥   /
+IfÀ< 1€“hen… @0bug.ÀÇntÀqr(48 à+ H);
+ModŸ
+iŸ
+şre
+‘KP©QA IP,(SStğg?ğ1Á
+ "+iñ   ' æ     n@°U/ÿ)V—
+Š
+
+ğYmŸ
+b‘
+ÑXT
+AÀ°»òjC
+O >kßİ
+0 A(°‘7‘AsA'°€Àshe0¨va$riÑšs ¡ auà›atically#;K!, RSGL£Cx-A6‰'P"itialiQ¥A0rzero R-s‹ °²AƒRetakSğ       æi
+4"=
+
+â       €°(0
+' señŠú   
+Î'ÿ
+û°&Ÿ
+ÔŸ
+ ^½Ÿ
+l5 Œ‘
+O
+zR0
+Rÿš
+Qg2
+xPQ†V
+
+
+ĞH
+
+
+
+
+üğzÿ
+Ğ²
+
+
+
+
+ÿÿ
+
+€
+
+ÿÿ
+
+€
+
+ô
+ô
+ÿÿ
+
+lÿÿÿÿÿÿÿÿÿÿÿÿÿ
+
+
+
+
+0046}#
+2N‹=
+ 1@0.0 Obâ €Library€%E€
+
+
+
+
+
+
+ù
+
+ñ
+
+
+
+á
+
+
+
+
+
+
+
+
+
+€
+€
+€
+
+€
+{
+
+
+
+
+
+
+
+
+Document=ThisDocument/&H00000000
+Name="Project"
+HelpContextID="0"
+VersionCompatible32="393222000"
+CMG="E9EB05D309D309D309D309"
+DPB="D2D03E552656265626"
+GC="BBB9574C414D414DBE"
+
+[Host Extender Info]
+&H00000001={3832D640-CF90-11CF-8E43-00A0C911005A};VBE;&H00000000
+
+[Workspace]
+ThisDocument=43, 21, 1400, 729, C
+
+
+

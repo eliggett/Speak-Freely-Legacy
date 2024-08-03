@@ -1,0 +1,1245 @@
+.TH "SFMIKE" 1 "3 MAR 2003"
+.UC 4
+.SH NAME
+sfmike \- Speak Freely sound transmission utility
+.SH SYNOPSIS
+.nh
+.na
+.B sfmike
+[
+.B  \-abcdefglmnqrtu
+]
+[
+.BI \-lpc [ 10 [ r n]]
+]
+[
+.BI \-s level[,timeout]
+]
+'in +5n
+[
+.BI \-ba AESKey
+]
+[
+.BI \-bf BlowfishKey
+]
+[
+.BI \-bx AESHexKey
+]
+[
+.B \-celp
+]
+[
+.BI \-i IDEAkey
+]
+[
+.BI \-k DESkey
+]
+[
+.BI \-nat csock,dsock
+]
+[
+.BI \-o keyfile
+]
+[
+.BI \-robust n
+]
+[
+.B \-rtp
+]
+[
+.B \-t
+]
+[
+.B \-vat
+]
+[
+.BI \-w dumpfile
+]
+[
+.BI \-y indev[:ctldev]
+]
+[
+.BI \-z User_list
+]
+.I hostname[:port]
+[
+.BI \-p hostname[:port]
+]
+[
+.I soundfile ...
+]
+.in -5n
+.hy
+.ad
+.SH DESCRIPTION
+.B "Speak Freely"
+allows users of a variety of Unix and Unix-like
+systems equipped with audio hardware
+connected by a network to converse, using the audio input and output
+facilities of the machine to digitise and later reconstruct the
+sound and the network to relay sound packets.  Audio files in Sun .au
+format
+or .gsm files pre-compressed with
+.B toast
+may be transmitted and played on remote machines as well.
+Optional compression is provided, allowing conversations
+over relatively low-bandwidth Internet links as well as local area
+networks.
+.B "Speak Freely" 
+consists of two programs,
+.B sfmike
+and
+.BR sfspeaker .
+.PP
+You can send audio to machine
+.I hostname
+running the
+.B sfspeaker
+program with:
+
+.BI "    sfmike " hostname
+
+which sends real time audio, or:
+
+.B "    sfmike "
+.I hostname
+.I soundfile
+
+where
+.I soundfile
+is one or more files of prerecorded sound in Sun (.au) format or
+GSM compressed (.gsm) sound files created by
+.BR toast .
+The
+.I hostname
+can be either a local or Internet host name (like stinky.dwarves.org)
+or a numeric IP address (for example 192.168.67.89).  If your
+network supports IP Multicasting, you can transmit to a multicast
+group simply by giving its name or IP address.  The scope
+(time-to-live) of the multicast can be specified as a number between 0
+(restricted to the same host) and 255 (unrestricted) at the end of the
+group name or IP address, separated by a slash, for example
+231.111.75.122/128; the default multicast scope is 1: restricted
+to the same subnet.
+If the host you're transmitting to uses a different port number than
+the default configured in the
+.BR Makefile ,
+specify the port number after the host name or IP address, separated
+by a colon, for example bink.bilgepump.com:5050.  If both a port number
+and multicast scope are specified, the port number should come first:
+227.31.89.117:4851/64.
+.PP
+Users with dial-up Internet connections
+which assign a different host name and IP address for each session
+can publish their current address on a Look
+Who's Listening server.  Others can then use the
+.B sflwl
+lookup program to see, based on an individual's invariant
+E-mail address or name, whether they're connected and if so
+with what address.  A Look Who's Listening server is
+currently available at the site lwl.fourmilab.ch.
+.PP
+To protect against eavesdropping,
+.B sfmike
+provides a variety of encryption algorithms, including
+AES, Blowfish, IDEA, DES, and a key read from a file.  Any number
+of encryption algorithms may be used simultaneously (assuming
+your machine is fast enough).  If
+.B pgp
+or
+.B gpg
+is installed,
+.B sfmike
+can invoke it automatically to securely transfer a
+randomly-generated session key to the party you're
+communicating with.
+.PP
+If
+.I soundfile
+is a single period, real time audio from the microphone jack is
+selected.  This permits you to send one or more sound files, then
+switch to live audio all in a single command.
+.PP
+.B sfmike
+is normally used in conjunction with an audio control panel
+to set audio record and playback levels.  An excellent
+X Window audio control tool which runs on most Unix platforms
+including Linux and FreeBSD is
+.BR xmmix ;
+for more information, visit the Web site
+http://metalab.unc.edu/tkan/xmmix/.  Most Unix workstations
+with audio hardware come with a proprietary audio control
+panel; consult the manufacturer's documentation for
+details.
+.PP
+In interactive (push-to-talk) mode, you can send text chat
+messages to users to whom you're transmitting by pressing the
+period (``.'') key, then entering a line of text.  This can
+be useful when you're setting up a connection and trying various
+compression modes to establish a reliable audio link.
+.PP
+It's perfectly valid to send audio to a copy of
+.B sfspeaker
+running on the same machine as
+.BR sfmike .
+In fact, it's a very handy way to experiment, as long as your
+audio hardware permits full-duplex operation.
+.SH OPTIONS
+Options are processed left to right and sound files are sent with
+the modes specified by options to their left on the command line.
+.TP 10
+.B \-a
+Selects ``always transmit'' mode.  Unless suppressed by squelch
+(see the
+.B \-s
+switch below)
+.B sfmike
+transmits live audio continuously.  It's usually better to use
+the default push-to-talk mode.  This mode is completely non-interactive;
+you'll need to use Control C or a
+.B kill
+command to terminate
+.BR sfmike ,
+and you can't use text chat.  The
+.B \-a
+option is primarily intended for automated broadcast or
+audio-on-demand applications such as
+.BR sfvod .
+To run full-duplex and retain
+the ability to pause transmission, use text chat, and exit the
+program normally, use the default push-to-talk mode, and
+simply leave the program continuously in talk mode.
+.TP
+.B \-b
+Selects push-to-talk (button) mode.  This is the default.
+Output is initially off and the legend ``Pause:'' appears.
+Pressing the space bar (or any key other than those
+which exit the program or enter text chat)
+toggles back and forth between ``Pause:'' and ``Talk:'' modes.  In
+Talk mode sound packets are sent to the destination, while in Pause mode they
+are discarded.  Push-to-talk mode reduces load on the network since no
+packets are sent unless you're talking.  Push-to-talk makes
+conference calls practical, since only the person who ``has
+the floor'' is transmitting to the group.  To exit
+.BR sfmike ,
+press Escape, ``q'', Control C, or Control D.  Pressing the
+period (``.'') key pauses audio (if in Talk mode) and prompts
+you with ``Chat:''.  You can then enter a line of text which
+will be sent to every destination you're transmitting to and
+printed on standard output by
+.B sfspeaker
+there, tagged with your identity.  This can be handy when you're
+trying to choose the best compression mode and having trouble
+getting audio through.  After entering a line of chat text,
+transmission remains paused; you can enter additional lines
+of chat text, if you wish, each prefixed by a period, or
+resume audio transmission by pressing any other key.
+.TP
+.BI \-ba key
+The specified
+.I key
+is used to encrypt sound transmitted to subsequently named hosts
+using the FIPS-197 Advanced Encryption Standard (AES) algorithm.
+To decrypt sound encoded with the
+.B \-ba
+switch,
+.B sfspeaker
+on the receiving machine must be invoked with an identical
+.BI \-ba key
+specification on the command line.  The
+.I key
+can be as long as you like; if it's a phrase of several words,
+be sure to enclose it in quotes.  The actual 128 bit AES key
+is created by applying the
+.B MD5
+algorithm to the given
+.IR key .
+You can specify a 256 bit key by supplying two key phrases
+after the
+.B \-ba
+option, separated by a plus sign (``+'').
+.B sfspeaker
+will continue to correctly receive unencrypted sound even if
+invoked with the
+.B \-ba
+switch.  To disable AES encryption for subsequent hosts, specify
+the
+.B \-ba
+switch with no
+.IR key .
+AES encryption is fast and
+far more secure than the DES encryption performed by the
+.B \-k
+switch.  It has been adopted by the U.S. government as
+the successor to DES and is free of patent restrictions.
+The
+.B \-bx
+option, described below,
+permits you to specify AES keys of 128, 192, or 256 bits
+in hexadecimal form.
+.TP
+.BI \-bf key
+The specified
+.I key
+is used to encrypt sound transmitted to subsequently named hosts
+using the Blowfish algorithm.
+To decrypt sound encoded with the
+.B \-bf
+switch,
+.B sfspeaker
+on the receiving machine must be invoked with an identical
+.BI \-bf key
+specification on the command line.  The
+.I key
+can be as long as you like; if it's a phrase of several words,
+be sure to enclose it in quotes.  The actual 128 bit Blowfish key
+is created by applying the
+.B MD5
+algorithm to the given
+.IR key .
+.B sfspeaker
+will continue to correctly receive unencrypted sound even if
+invoked with the
+.B \-bf
+switch.  To disable Blowfish encryption for subsequent hosts, specify
+the
+.B \-bf
+switch with no
+.IR key .
+Blowfish encryption is extremely fast and generally considered to
+be far more secure than the DES encryption performed by the
+.B \-k
+switch.  However, Blowfish is newer and has not been endorsed by
+governmental bodies or standards organisations.  It is free of
+patent restrictions and may be used by anybody in any manner
+without a license.
+.TP
+.BI \-bx hexkey
+The specified
+.I hexkey
+is used to encrypt sound transmitted to subsequently named hosts
+using the FIPS-197 Advanced Encryption Standard (AES) algorithm.
+To decrypt sound encoded with the
+.B \-bx
+switch,
+.B sfspeaker
+on the receiving machine must be invoked with an identical
+.BI \-bx hexkey
+specification on the command line.  The
+key is specified in hexadecimal, and must consist of the
+digits from 0 to 9 and letters from A through F (upper
+or lower case).  The length of the the key is determined
+by the number of key digits given: 128 bits for 32 or
+fewer digits, 192 bits for 33 through 48 digits, and
+256 bits for 49 through 64 digits.  The key is used as
+given; no hashing or transformation is performed.  If
+fewer digits than the key length are specified, they are
+left justified and unspecified digits are set to zero.
+.B sfspeaker
+will continue to correctly receive unencrypted sound even if
+invoked with the
+.B \-bx
+switch.  To disable AES encryption for subsequent hosts, specify
+the
+.B \-bx
+switch with no
+.IR key .
+AES encryption is fast and
+far more secure than the DES encryption performed by the
+.B \-k
+switch.  It has been adopted by the U.S. government as
+the successor to DES and is free of patent restrictions.
+.TP
+.B \-c
+Simple sound compression.
+(Note: The
+.B \-t
+switch, documented below, uses a far more sophisticated
+form of compression which reduces network bandwidth by
+a factor of five while delivering sound quality almost indistinguishable
+from the original.  The
+.B \-c
+form of compression is retained primarily for compatibility with
+earlier versions of
+.B sfspeaker
+which did not support the
+.B \-t
+switch, and for machines too slow to perform
+.B \-t
+switch compression in real time.  The
+.B \-f
+switch enables ADPCM compression which achieves the same
+reduction in data rate as the
+.B \-c
+switch with much less loss of fidelity and only modest demands
+on the CPU.
+Try
+.B \-t
+and
+.B \-f
+first, and only use the
+.B \-c
+switch if you have trouble [such as regular pauses in the
+audio which indicate either the sending or receiving
+CPU is too slow].)
+Simple compression is not supported by RTP and VAT protocols, and hence
+can be selected only in Speak Freely protocol.
+.TP
+.B \-celp
+Compress sound with the United States Department of Defense
+Federal Standard 1016 CELP (Code-Excited Linear Prediction)
+algorithm.  This algorithm is extremely computationally intense on the
+compression side (but not to decompress, on machines with fast
+floating point hardware), but provides acceptable voice grade
+fidelity with a 4800 bit per second data rate.
+Only one of the compression modes ADPCM
+.RB ( \-f ),
+CELP
+.RB ( \-celp ),
+LPC
+.RB ( \-lpc ),
+LPC-10
+.RB ( \-lpc10 ),
+and GSM
+.RB ( \-t )
+may be selected at once.
+.TP
+.B \-d
+Enables debug output from
+.I both
+the local copy of
+.B sfmike
+and the receiving copy of
+.B sfspeaker
+(unless blocked by the
+.B \-q
+option on
+.BR sfspeaker ).
+.TP
+.B \-e
+Prints, on standard output, a ``session key'' based upon a collection
+of data from the machine execution environment likely to be unique in
+the history of the universe, used as the seed to generate a 128 bit
+key.
+.B sfmike
+exits after printing this value.  Send it to the person
+you're talking to with a public key package such as
+.BR pgp ,
+then use it as the key for one of the regular
+encryption modes.  The session key is printed in groups of four
+letters separated by dashes so it's easier to read, if you wish,
+over a regular telephone (but how do you know nobody's listening?).
+.TP
+.B \-f
+Compress sound using the ADPCM (Adaptive Differential Pulse Code
+Modulation) algorithm.  This reduces the volume of data transmitted by
+a factor of two with much less loss of fidelity than the simple
+compression selected by the
+.B \-c
+switch.  It may be used in conjunction with the
+.B \-c
+switch to achieve a fourfold compression, albeit with substantial
+degradation of the audio.
+Only one of the compression modes ADPCM
+.RB ( \-f ),
+CELP
+.RB ( \-celp ),
+LPC
+.RB ( \-lpc ),
+LPC-10
+.RB ( \-lpc10 ),
+and GSM
+.RB ( \-t )
+may be selected at once.
+ADPCM is provided as an
+alternative to GSM for users with computers too slow to perform
+GSM compression in real time; ADPCM requires much less computation
+than GSM.
+.TP
+.B \-g
+Automatic gain control is enabled for real time audio. The
+recording gain is dynamically adjusted to compensate for the
+amplitude of the sound received, using the maximum dynamic
+range without clipping.  If this switch is specified, the
+record gain cannot be manually set with the audio control panel.
+Automatic gain control is off by default, and may not
+be supported by some audio drivers.
+.TP
+.BI \-i key
+The specified
+.I key
+is used to encrypt sound transmitted to subsequently named hosts
+using the International Data Encryption
+Algorithm (IDEA), the same algorithm used by
+.B pgp
+to encrypt message bodies with the random session key.
+To decrypt sound
+encoded with the
+.B \-i
+switch,
+.B sfspeaker
+on the receiving machine must be invoked with an identical
+.BI \-i key
+specification on the command line.  The
+.I key
+can be as long as you like; if it's a phrase of several words,
+be sure to enclose it in quotes.  The actual 128 bit IDEA key
+is created by applying the
+.B MD5
+algorithm to the given
+.IR key .
+.B sfspeaker
+will continue to correctly receive unencrypted sound even if
+invoked with the
+.B \-i
+switch.  To disable IDEA encryption for subsequent hosts, specify
+the
+.B \-i
+switch with no
+.IR key .
+IDEA encryption is substantially faster and generally considered to
+be much more secure than the DES encryption performed by the
+.B \-k
+switch.  However, IDEA is newer, has not been formally adopted by
+governments, and is patented, restricting its commercial use.
+.TP
+.BI \-k key
+The specified
+.I key
+is used to encrypt sound transmitted to subsequently named hosts
+using a slightly modified version of the Data Encryption Standard
+algorithm (the initial and final permutations, which do not contribute
+to the security of the algorithm and exist purely to deter software
+implementations of DES are not performed).  In order to decrypt sound
+encoded with the
+.B \-k
+switch,
+.B sfspeaker
+on the receiving machine must be invoked with an identical
+.BI \-k key
+specification on the command line.  The
+.I key
+can be as long as you like; if it's a phrase of several words,
+be sure to enclose it in quotes.  The actual DES key
+is created by applying the
+.B MD5
+algorithm to the given
+.IR key ,
+then folding the resulting 128 bit digest into
+56 bits with XOR and AND.
+.B sfspeaker
+will continue to correctly receive unencrypted sound even if
+invoked with the
+.B \-k
+switch.  To disable DES encryption for subsequent hosts, specify
+the
+.B \-k
+switch with no
+.IR key .
+.TP
+.B \-l
+Remote loopback is enabled.  Each packet received by
+.B sfspeaker
+will be immediately transmitted back to a copy of
+.B sfspeaker
+running on the originating machine.  You can use loopback to
+evaluate the quality of transmission over various kinds of
+communication links without the need to have a person at the
+other end.
+.TP
+.B \-lpc
+Compress sound with an experimental linear predictive coding
+algorithm developed by Ron Frederick of Xerox PARC.  This algorithm
+achieves a tremendous degree of compression: more than 12 to 1, with
+relatively good sound quality.  If you select it, be extremely careful
+not to set your microphone level too high.  Driving the sound input
+into clipping causes terrible crackling break-ups in the audio.  It's
+best to experiment with a local machine or echo server to make sure
+you have the input level set optimally.  Like the GSM compression
+selected by the
+.B \-t
+option, this form of compression requires a great
+deal of computation: in this case in floating point.  If your computer
+is too slow or too busy running other tasks, you may get drop-outs in
+the sound.
+LPC compression does not provide as good sound quality as GSM, and
+is somewhat finicky to set up; it is provided as an alternative
+when network bandwidth must be reduced to a minimum.
+Only one of the compression modes ADPCM
+.RB ( \-f ),
+CELP
+.RB ( \-celp ),
+LPC
+.RB ( \-lpc ),
+LPC-10
+.RB ( \-lpc10 ),
+and GSM
+.RB ( \-t )
+may be selected at once.
+.TP
+.BI \-lpc10 [ r n]
+Compress sound to a data rate of 2400 bits per second using the
+United States Department of Defense Federal Standard 1015 /
+NATO-STANAG-4198 algorithm, republished as Federal Information
+Processing Standards Publication 137 (FIPS Pub 137).
+LPC-10 compression
+(an algorithm completely different from that selected by the
+.B \-lpc
+option) compresses sound by a factor of more than 26 to 1 with fidelity,
+albeit less than that of GSM
+.RB ( \-t )
+compression, perfectly adequate for voice-grade communications.
+LPC-10 compression requires a great deal
+of floating point computation.  If your computer is too slow
+or too busy running other tasks, you may get drop-outs in the
+sound.
+Only one of the compression modes ADPCM
+.RB ( \-f ),
+CELP
+.RB ( \-celp ),
+LPC
+.RB ( \-lpc ),
+LPC-10,
+or GSM
+.RB ( \-t )
+can be selected at once.
+LPC-10 is not a standard compression mode of RTP or VAT protocol, and hence
+can be selected only in Speak Freely protocol.
+
+The extreme compression achieved by the LPC-10 algorithm allows
+the option of ``robust transmission,'' in which multiple copies of
+sound packets are sent, each containing a sequence number which allows
+the receiver to discard duplicate or out-of-sequence packets.
+Robust transmission often allows intelligible conversation over heavily
+loaded network links which would otherwise induce random pauses
+and gaps in received sound.  To enable robust compression, add the
+suffix
+.BI r n
+to the
+.B \-lpc10
+option, where
+.I n
+is the number of copies of each packet to be sent, between 1 and 4.
+If no
+.BI r n
+suffix is specified, no duplicate packets are sent (equivalent to
+specifying
+.BR r1 .
+For example, to send three copies of each LPC-10 sound packet,
+specify the option
+.BR \-lpc10r3 .
+Sending duplicate sound packets requires more network bandwidth.
+LPC-10 compression with no duplicate packets can function on a 4800 bit
+per second connection to the Internet; a 9600 bit per second line can
+accommodate two copies of each packet
+.RB ( \-lpc10r2 ),
+while a 14,000 bit per second or faster link can handle three
+.RB ( \-lpc10r3 )
+or four
+.RB ( \-lpc10r4 )
+copies.  (Four copies of each packet is just within the capability of
+a 14,400 bit per second line, so if the line is being used for other
+simultaneous traffic, you may have to reduce the number of copies to
+three.)  Sending more than four copies of each packet does not
+improve performance and simply wastes bandwidth; packet replication
+is therefore limited to four copies.
+.TP
+.B \-m
+Manual gain control.  Allows you to manually set the input level
+with your audio control panel.
+This is the default mode.
+.TP
+.B \-n
+Disables compression of sound.  The switch
+permits canceling the effect of a previous
+.BR \-c ,
+.BR \-celp ,
+.BR \-f ,
+.BR \-lpc ,
+.BR \-lpc10 ,
+or
+.B \-t
+switch when sending multiple sound files with one
+.B sfmike
+command.
+.TP
+.BI \-nat csock,dsock
+This option is reserved for
+.B sfspeaker
+when launching
+.B sfmike
+to contact a site behind a router or firewall which
+performs Network Address Translation.
+.TP
+.BI \-o filename
+The contents of the specified
+.I filename
+are used as a ``key file'' to encrypt sound data sent to subsequently
+named hosts.  The file should
+be at least 8000 bytes long and contain data with as little regularity
+as possible.
+The
+.RB `` pgp
+.BI +makerandom= length
+.IR filename ''
+facility is an excellent way to create a key file.
+To decode sound encrypted with a key file,
+.B sfspeaker
+on the receiving machine must be invoked with the
+.B \-o
+switch specifying a file identical to that on the transmitting
+machine.
+You can disable key file encryption by specifying the
+.B \-o
+switch with no
+.IR filename .
+Unencrypted sound will still be played correctly even if
+the
+.B \-o
+switch is specified on the call to
+.BR sfspeaker .
+You can use a public-key cryptography package such as
+.B pgp
+or
+.B gpg
+to exchange a key file with another person.
+Key file encryption is much faster than any of the other options
+but is far, far less secure; use it only if all of the other forms
+of encryption run too slowly on your machine.
+.TP
+.BI \-p hostname
+Adds
+.I hostname
+to the list of hosts to which sound is sent.
+The same sound will be sent to each
+host you name.  If you have a slow network link, the number of hosts
+will be limited since, even with compression, there may not be
+enough outbound bandwidth to transmit packets to all the hosts.
+.TP
+.B \-q
+Quiet--disables debug output.  This is the default; the switch can be
+used to cancel the effect of a prior
+.B \-d
+switch.  This switch has no effect on a remote copy of
+.B sfspeaker
+invoked with the
+.B \-d
+switch.
+.TP
+.B \-r
+Ring.  This is used to get the attention of a user when you're
+trying to establish a connection.  The speaker output is unmuted
+and the playback volume is set to mid-level
+to guarantee audibility.  Sun workstation users may subsequently
+switch the output back to the headphones, if desired, with
+.BR audiotool .
+The
+.B \-r
+switch has no effect if remote ring has been disabled with the
+.B \-n
+switch on
+.BR sfspeaker .
+If your audio driver does not permit setting the recording
+level, this option will have no effect.
+.TP
+.BI \-robust n
+Use ``robust transmission mode'' in which
+.I n
+copies of each audio packet are sent to the destination,
+each incorporating a serial number which allows the receiver
+to discard duplicate and out of order packets.  Robust
+transmission increases the number of packets sent and
+hence the bandwidth required by a factor of
+.IR n ,
+but may permit reliable transmission on connections which
+frequently drop and shuffle packets.  Robust transmission
+works best with protocols that provide the greatest
+degree of compression such as
+LPC
+.RB ( \-lpc ),
+LPC10
+.RB ( \-lpc10 ),
+CELP
+.RB ( \-celp ),
+and
+GSM
+.RB ( \-t ).
+Robust transmission may not be used with VAT or RTP protocols, and
+is incompatible with releases of Speak Freely prior to 7.5 for any
+compression mode other than
+.BR \-lpc10 .
+.TP
+.B \-rtp
+Transmit using the Real-Time transport Protocol (RTP),
+as defined in Internet RFCs 1889 and 1890.
+This allows
+.B sfmike
+to send audio to other Internet voice applications which support
+a common subset of RTP.  To comply with the RTP standard, when
+.B \-rtp
+is selected only DES
+.RB ( \-k )
+encryption is available and simple
+.RB ( \-c ),
+CELP
+.RB ( \-celp ),
+and LPC-10
+.RB ( \-lpc10 )
+compression cannot be selected.  RTP compliant programs do not
+necessarily implement all compression
+modes or encryption; consult the documentation for the program
+with which you wish to communicate to see which options it supports.
+.TP
+.BI \-s level[,timeout]
+Squelch output whenever input volume is below the specified
+.IR level .
+The
+.I level
+specification is an arbitrary number from 1 to 32767 with larger
+numbers denoting louder sound.  The default squelch value, if none
+is given on the
+.B \-s
+switch, is 4096 which works reasonably well unless your computer room is
+very noisy (in which case you might want to avail yourself of a
+headset with a directional boom microphone).  Squelch interacts poorly
+with automatic gain control; if you enable squelch, don't use
+the
+.B \-g
+switch.
+Squelch is off by default, equivalent to a
+specification of
+.BR \-s0 .
+Enabling squelch allows multiple people to send sound to the same
+destination(s) and, as long as only one speaks at a time, for the
+result to be intelligible.  In order for this to work the input
+and squelch levels must be set so that sound is sent only when you're
+talking.  Enabling debugging output with the
+.B \-d
+switch can help to determine the best settings.
+To avoid breakups due to momentary pauses in speech, squelch
+continues to transmit for a period after the last packet exceeding
+the squelch threshold was seen.  By default, this interval is 1.5 seconds,
+You can specify the squelch timeout by giving the value in milliseconds
+(one second is 1000 milliseconds) after the squelch value, separated by
+a comma.
+.TP
+.B \-t
+Compress sound with the algorithm used by Global System Mobile (GSM)
+digital cellular telephones.  This is the default mode.
+GSM compression reduces the network bandwidth
+requirement by a factor of five: 1650 bytes per second compared to the
+uncompressed rate of 8000 bytes per second.  This allows
+.B "Speak Freely"
+to be used on network links as slow as 19,200 bits per second.  GSM
+compression is lossy, but given the limitations of 8000 samples
+per second audio, there is little perceived loss of fidelity.  GSM
+compression and decompression are extremely computationally intense.
+If the CPU on either end is not fast enough, regular pauses will be
+heard in the audio stream.  If you're running on a machine with other
+CPU-intensive tasks, you may encounter random pauses when other tasks
+use enough CPU resources so compression and/or decompression can't be
+done in real time.  If this occurs, you can try the ADPCM
+.RB ( \-f )
+or Simple
+.RB ( \-c )
+compression options described above; they provide less compression
+and poorer quality, but consume much less CPU time.
+
+If you need to reduce the bandwidth further, you can specify
+.I both
+the
+.B \-c
+and
+.B \-t
+switches.  This simultaneously hogs the CPU and compromises sound quality,
+but the data rate to transmit real time audio is reduced to 955
+bytes per second.
+Only one of the compression modes ADPCM
+.RB ( \-f ),
+CELP
+.RB ( \-celp ),
+LPC
+.RB ( \-lpc ),
+LPC-10
+.RB ( \-lpc10 ),
+and GSM
+.RB ( \-t )
+may be selected at once.
+.TP
+.B \-td
+Releases of Speak Freely for Unix prior to version
+6.1e (released in September 1998)
+contained a bug which caused
+GSM compression to be sensitive to the byte order (``endianism'')
+of the machine running
+.B sfmike
+and
+.BR sfspeaker .
+This error, which only affected ``little-endian'' machines
+such as Intel processors, is corrected in current releases.
+If you absolutely must communicate with a Unix user on a
+little-endian platform running a version prior to 6.1e,
+specifying the
+.B \-td
+option on
+.B sfmike
+will force it to send the old, incorrect byte order.
+A much better alternative is to encourage the user
+to install the a current release in which the problem has
+been corrected.
+.TP
+.B \-u
+Prints how-to-call information.
+.TP
+.B \-vat
+Transmit using a protocol compatible with the Lawrence Berkeley
+Laboratory's original Visual Audio Tool (VAT).  
+This allows
+.B sfmike
+to send audio to other Internet voice applications compatible with 
+most releases of VAT.  (Starting with version 4, VAT supports the
+Internet Real Time transport Protocol (RTP) as well as the original
+VAT protocol.  Since RTP provides much better session control and
+interoperability with other applications, you should use the
+.B \-rtp
+option instead of
+.B \-vat
+unless you absolutely have to communicate with programs which support
+only the old VAT protocol.)  To be compatible with VAT, when
+.B \-vat
+is selected the only DES
+.RB ( \-k )
+encryption is available and simple
+.RB ( \-c ),
+CELP
+.RB ( \-celp ),
+and LPC-10
+.RB ( \-lpc10 )
+compression cannot be selected.
+Some nominally ``VAT compatible'' applications get bedeviled by
+the details when you select infrequently used compression modes such as LPC
+and combine them with encryption.  If at all possible, use
+.B \-rtp
+mode to communicate with other Internet voice programs.
+.TP
+.BI \-w dumpfile
+Real-time audio (but not sound files you send) is
+dumped into the designated
+.IR dumpfile .
+The contents of the
+.I dumpfile
+are the raw bytes
+.B sfmike
+read from the audio input device, without any header,
+control information, or compression.  This
+option is handy when you're having trouble getting an audio
+input device to provide data in the format expected by
+Speak Freely.  If audio input is working normally, the
+.I dumpfile
+will grow at the rate of 8000 bytes per second as you
+transmit; be sure to place the
+.I dumpfile
+on a file system with adequate
+space and/or limit the amount of audio you dump to a short
+passage suitable for debugging audio input settings.
+.TP
+.BI \-y indev[:ctldev]
+This option allows you to override the defaults for the name
+of the audio input device file (for example
+.BR /dev/audio )
+and, optionally, the audio control device file, specified
+after the input device, separated by a colon.  If the first
+character of either the input or control device specification
+is a sharp sign, ``#'', the balance is taken as an integer
+giving the number of an already-open file descriptor in a
+parent process which is launching
+.BR sfmike .
+This facility (or, if you like, gimmick) allows programs
+such as
+.B sflaunch
+to evade the restriction in some audio drivers which support
+full-duplex but don't permit two programs to simultaneously
+open the audio device files.  This option is not available on
+Silicon Graphics or other platforms which do not use device
+files for audio I/O.
+.TP
+.BI \-z user_list
+If
+.B pgp
+or
+.B gpg
+is installed on your machine, you can specify one or more users in
+your
+public keyring (if you name more than user, be sure to enclose the
+user list in quotes).  A 128 bit random session key is generated and
+.B pgp
+or
+.B gpg
+is invoked to encrypt it with the public keys of the named users.
+The encrypted session key is transmitted to subsequently named hosts
+and then used to IDEA encrypt sound sent to them.  This avoids the
+separate step of generating and exchanging a session key described above
+for the
+.B \-e
+option.  Since the actual public key encryption is performed by
+.B pgp
+or
+.B gpg
+you can enjoy the
+convenience of public key exchange of session keys for audio as well.
+.SH FILES
+On most Unix machines audio is read from the
+.B /dev/audio
+device file.  The device will be busy for input whenever
+.B sfmike
+is running.
+On Silicon Graphics machines the digital media development toolkit
+is used to access the audio hardware.
+.SH BUGS
+No warning is given if the destination machine is not running
+.BR sfspeaker ;
+sound just disappears.
+.PP
+In order to deliver acceptable (or at least tolerable) performance across
+international links,
+.BR sfmike " and " sfspeaker
+use ``Internet datagram'' socket protocol which is essentially a
+``fire and forget'' mechanism; neither flow control nor acknowledgement
+are provided.  Since sound must be delivered at the correct time in order
+to be intelligible, in real time transmission there's little one can
+do anyway if data are lost.  Consequently, bogged down lines, transmission
+errors, etc., simply degrade or destroy the quality of the audio without
+providing explicit warnings at either end that anything's amiss.
+In addition, the lack of an end-to-end handshake deprives
+.B sfmike
+of backpressure information to control the rate at which it dispatches
+packets when transmitting a sound file.  I fake flow control by calculating
+the time it will take to play each packet and then
+pause that number of microseconds after sending it.  This is, of course,
+utterly beneath contempt, but it actually works quite nicely
+(at least as long as your machine isn't busy).  If you're motivated to
+replace all this datagram stuff with nice, clean RPC calls, don't bother.
+That's how I built the initial version of
+.BR "Speak Freely" ,
+and although it ran OK on an Ethernet, it was a disaster on long
+distance connections.
+.PP
+AES, Blowfish, IDEA, DES, and key file options encrypt every sound packet
+with the same key--no key chaining is performed.  (AES, Blowfish, DES and IDEA
+encryption do, however, use cipher block chaining
+.I within
+each packet.)  Chaining from packet to packet
+would increase security but then loss of any packet
+would make it impossible to decrypt all that followed.
+.PP
+Certain governments attempt to restrict the availability, use, and
+exportation of software with cryptographic capabilities.
+.B "Speak Freely"
+was developed in Switzerland, which has no such restrictions.  The
+AES, DES, MD5, Blowfish, and IDEA packages it uses were obtained from an
+Internet site in another European country which has no restrictions on
+cryptographic software.  If you import this software into a country
+with restrictions on cryptographic software, be sure to comply with
+whatever restrictions apply.  The responsibility to obey the law in
+your jurisdiction is entirely your own.
+.PP
+Intelligible speech requires both sufficient bandwidth to deliver
+the audio data and a consistent delivery time for packets.  Even if your
+link is theoretically fast enough, congestion on it or on other
+intermediate links may cause drop-outs.  Compressing the data with the
+.BR \-f ,
+.BR \-t ,
+.BR \-lpc ,
+.BR \-lpc10 ,
+.BR \-celp ,
+and/or
+.B \-c
+switches reduces the bandwidth required by a factor of from two to
+twenty-six and can often alleviate this problem, and the ``robust
+transmission'' option of LPC-10 compression may improve intelligibility
+when communicating across  heavily-loaded lines.
+Even so, if file
+transfers or other bulk traffic are underway, you'll probably be
+disappointed.
+.PP
+By default
+.B sfmike
+transmits on Internet port number 2074.  It is
+conceivable, albeit unlikely, that this might conflict with some other
+locally-developed network server.  You can specify a different port
+by appending it to the destination host, separated by
+a colon, but of course you need to ensure the remote copy of
+.B sfspeaker
+is listening on that port.  When communicating with other applications
+using VAT or RTP protocols, you must specify the port on which the
+other application is listening.  RFC 1890 recommends port 5004 as
+the default port for RTP applications.  Many VAT protocol applications
+default to port 3456.
+.PP
+There are
+.I way
+too many command line options.  Options
+should be consolidated wherever possible and changed to keywords
+which can be abbreviated to the shortest unique prefix.
+.SH ACKNOWLEDGEMENTS
+The Silicon Graphics audio drivers are based on the stand-alone SGI
+version developed by 
+Paul Schurman of Espoo, Finland.  Without his
+generous contribution,
+.B "Speak Freely"
+would have probably remained forever confined in an orbit
+around the Sun.
+.PP
+Andrey A. Chernov contributed code
+that enables Speak Freely to build and run on FreeBSD.
+.PP
+Hans Werner Strube contributed 
+code to allow the program to build under Solaris 2.4 without
+any source changes or need for compatibility modes.
+.PP
+The GSM compression and decompression code was developed by
+Jutta Degener and
+Carsten Bormann of the
+Communications and Operating Systems Research Group,
+Technische  Universitaet Berlin:
+Fax: +49.30.31425156, Phone: +49.30.31424315.  They
+note that THERE IS ABSOLUTELY NO WARRANTY FOR THIS SOFTWARE.
+Please see the
+.B readme
+and
+.B copyright
+files in the
+.B gsm
+directory for further details.
+.PP
+The ADPCM compression and decompression code was developed by Jack Jansen
+of the Centre for Mathematics and Computer Science, Amsterdam, The Netherlands.
+Please see the
+.B readme
+and
+.B copyright
+files in the
+.B adpcm
+directory for further details.
+.PP
+The Federal Standard 1016
+.B \-celp
+code-excited linear prediction algorithm and software were
+developed by Joseph P. Campbell Jr., Vanoy C. Welch and Thomas E. Tremain
+of the U.S. Department of Defense.  Craig F. Reese of the
+IDA/Supercomputing Research Center adapted the original
+implementation for use on general-purpose computers.
+.PP
+The
+.B \-lpc
+linear predictive coding compression
+algorithm was developed by Ron Frederick of Xerox PARC.
+.PP
+The public domain implementation of U.S. Federal Standard 1015
+.B \-lpc10
+compression algorithm was developed by the United States
+Department of Defense, National Security Agency (NSA).  Please see the
+.B README
+and
+.B FAQ
+files in the
+.B lpc10
+directory for additional details.
+.PP
+The DES encryption code was developed by Phil Karn, KA9Q.  Please
+see the
+.B readme
+file in the
+.B des
+directory for further details.
+.PP
+The public domain implementation of the Advanced Encryption System (AES)
+was developed by Brian Gladman.  For details, please visit his
+Web page:
+.ce 1
+http://fp.gladman.plus.com/cryptography_technology/rijndael/
+and see the
+.B README
+file in the
+.B aes
+directory.
+.PP
+The Blowfish encryption module and the
+DES encryption library used for encrypting and decrypting VAT
+and RTP protocol packets were developed by Eric Young.
+Please see the
+.B README
+and
+.B COPYRIGHT
+files in the
+.B blowfish
+and
+.B libdes
+directory for further details.  The Blowfish algorithm was
+invented by Bruce Schneier and is in the public domain.
+.PP
+The IDEA algorithm was developed by Xuejia Lai and James L. Massey, of
+ETH Zurich.  The implementation used in
+.B "Speak Freely"
+was modified and derived from original C code developed by Xuejia Lai
+and optimised for speed by Colin Plumb
+The IDEA[tm] block cipher is patented by Ascom-Tech AG. The Swiss patent
+number is PCT/CH91/00117, the European patent number is EP 0 482 154 B1, and
+the U.S. patent number is US005214703. IDEA[tm] is a trademark of Ascom-Tech
+AG. There is no license fee required for noncommercial use. Commercial users
+may obtain licensing details from MediaCrypt AG at IDEA@mediacrypt.com.
+You can use IDEA encryption for noncommercial communications without a
+license from MediaCrypt AG; commercial use is prohibited without a license.
+If you don't want to obtain a license from Ascom-Tech, use AES, Blowfish, DES, or
+key file encryption instead.
+.PP
+The implementation of MD5 message-digest algorithm
+is based on a public domain version written by Colin Plumb in 1993.
+The algorithm is due to Ron Rivest.  The algorithm is described
+in Internet RFC 1321.
+.SH "SEE ALSO"
+.PD
+.BR audio (4),
+.BR audiopanel (1),
+.BR audiotool (1),
+.BR gpg (1),
+.BR kill (1),
+.BR pgp (1),
+.BR sflaunch (1),
+.BR sflwl (1),
+.BR sfspeaker (1),
+.BR sfvod (1),
+.BR soundeditor (1),
+.BR soundfiler (1),
+.BR talk (1),
+.BR toast (1),
+.BR xmmix (1)
+.ne 4
+.SH AUTHOR
+.RS 5
+.nf
+John Walker
+WWW:    http://www.fourmilab.ch/
+.fi
+.RE
+.PP
+All modules of
+.B "Speak Freely"
+developed by me are in the public domain.
+See the
+.B readme
+and/or
+.B copyright
+files in the
+.BR aes ,
+.BR adpcm ,
+.BR blowfish ,
+.BR celp ,
+.BR des ,
+.BR gsm ,
+.BR idea ,
+and
+.B libdes
+directories for conditions of use and distribution of those
+components.  This software is provided ``as is'' without express or
+implied warranty.

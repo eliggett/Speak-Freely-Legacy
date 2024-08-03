@@ -1,0 +1,33 @@
+In order to pass NAT firewalls, sfmike and sfspeaker have to
+share sockets.
+
+This is accomplished by sfspeaker starting sfmike. Example
+usage (basic):
+
+(on host outside of the firewall, start in passive mode)
+sfspeaker -NAT
+
+(on host behind firewall)
+sfspeaker -NAToutside_hostname
+
+Note that there is no need to start sfmike manually! Your PATH,
+however must include the directory where sfmike is, or sfmike
+must be in the current directory.
+
+The options usually given to sfmike now has to be passed to
+sfspeaker, like this slightly more complicated example:
+
+(on host outside of the firewall, start in passive mode)
+sfspeaker -g -s2000,3 -bf"foo bar" -p3096 -NAT
+
+(on host behind firewall)
+sfspeaker -g -Xlpc10 -s2000,3 -bf"foo bar" -NAToutside_hostname:3096
+
+The example includes autogain, squelch, crypto and compression
+options. The passive host automatically detects compression
+mode and answers accordingly.  For more info see the manpage of
+sfspeaker(1)
+
+Best of luck
+//Tor-Åke Fransson
+

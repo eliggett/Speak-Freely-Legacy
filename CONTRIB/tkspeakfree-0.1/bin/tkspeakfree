@@ -1,0 +1,17 @@
+#!/bin/sh
+
+LIB=`dirname $0`/../lib/tkspeakfree
+
+wish "$LIB/tkspeakfree.tcl" -- "$@" &
+trap "/bin/sh -c \"kill $!
+	kill -9 \`cat /tmp/tclsh-exec.$!.*.pid\`
+	rm /tmp/tclsh-exec.$!.*
+	exit
+	\" >/dev/null 2>&1
+	" 1 2 3 6 14 15 16 17
+pid=$!
+wait $pid
+/bin/sh -c "
+	kill -9 \`cat /tmp/tclsh-exec.$!.*.pid\`
+	rm /tmp/tclsh-exec.$!.*
+" >/dev/null 2>&1

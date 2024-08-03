@@ -1,0 +1,158 @@
+.TH "sflaunch" 1 "18 SEP 1999"
+.UC 4
+.SH NAME
+sflaunch \- Speak Freely mike and speaker launcher
+.SH SYNOPSIS
+.nh
+.na
+.B sflaunch
+[
+.B  \-dqu
+]
+'in +5n
+[
+.BI \-y indev[:ctldev]
+]
+[
+.B \-both
+.I mike_and_speaker_options...
+]
+[
+.B \-launch
+.I more_launch_options...
+]
+[
+.B \-mike
+.I mike_options...
+]
+[
+.B \-speaker
+.I speaker_options...
+]
+[
+.I hostname[:port]
+]
+[
+.I soundfile ...
+]
+.in -5n
+.hy
+.ad
+.SH DESCRIPTION
+.B sflaunch
+was created as a work-around for audio drivers, even some
+full-duplex, which do not permit two separate
+programs such as
+.B sfmike
+and
+.B sfspeaker
+to independently open the audio device, notwithstanding
+one program's opening it read-only and the other write-only.
+.B sflaunch
+opens the audio device in read/write mode, then
+spawns two child processes in which
+.B sfmike
+and
+.B sfspeaker
+are executed, passing the open audio file descriptors to each
+via the
+.B \-y
+option supported by both programs, along with whatever
+arguments were specified for each program on the
+.B sflaunch
+command line.
+.PP
+.B sflaunch
+may be used on any platform, even those without the restriction
+which motivated its creation; you may find using it more
+convenient than manually starting
+.B sfspeaker
+and
+.BR sfmike .
+.SH OPTIONS
+.TP 10
+.B \-both
+The options which follow are passed to
+.I both
+.B sfmike
+and
+.B sfspeaker
+on their command lines.  This is particularly handy
+when specifying encryption keys.
+.TP
+.B \-d
+Enables debug output.
+.TP
+.BR \-launch " or " \-sflaunch
+The options which follow are processed by
+.B sflaunch
+rather than being passed to
+.B sfmike
+or
+.BR sfspeaker .
+This is the default, and as long as you place all
+.B sflaunch
+options before the first
+.B \-mike
+or
+.B \-speaker
+option you never need to use the
+.B \-launch
+option.  It is provided as a convenience for scripts
+which wish to assemble
+.B sflaunch
+commands without paying attention to the order in which
+options are specified.
+.TP
+.BR \-mike " or " \-sfmike
+The options which follow are passed to
+.B sfmike
+when it is invoked.  Note that destination and sound
+file arguments are automatically passed to
+.B sfmike
+and need not be preceded by this option.
+.TP
+.B \-q
+When a connection is closed,
+.B sflaunch
+normally prompts the user to open another connection.  If the
+.B \-q
+option is specified,
+.B sflaunch
+exits at the end of first connection, terminating
+.B sfspeaker
+and returning to the shell prompt.
+.TP
+.BR \-speaker " or " \-sfspeaker
+The options which follow are passed to
+.B sfspeaker
+when it is invoked.  You may switch back and forth
+between directing options to
+.B sfmike
+and
+.B sfspeaker
+as many times as you wish.
+.TP
+.B \-u
+Prints how-to-call information.
+.TP
+.BI \-y indev[:ctldev]
+This option allows you to override the defaults for the name
+of the audio input device file (for example
+.BR /dev/audio )
+and, optionally, the audio control device file, specified
+after the input device, separated by a colon.
+.SH "SEE ALSO"
+.BR sfmike (1),
+.BR sfspeaker (1)
+.PD
+.ne 4
+.SH AUTHOR
+.RS 5
+.nf
+John Walker
+WWW:    http://www.fourmilab.ch/
+.fi
+.RE
+.PP
+This program is in the public domain.

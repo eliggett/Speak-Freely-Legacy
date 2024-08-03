@@ -1,0 +1,38 @@
+To build and install Speak Freely for Unix, edit the Makefile
+to set the C compiler and linker flags and any options appropriately
+for your system.  Settings for a variety of popular platforms are
+included at the top of the Makefile, and you may be able to simply
+uncomment those for your system.
+
+Next, perform a:
+
+    make
+
+If everything compiles and links OK, you're ready to copy the
+Speak Freely executables (named on the "PROGRAMS =" line in
+the Makefile) into a local binary directory on your path.
+Documentation for each of these programs is supplied in
+the eponymous man pages, all with an extension of ".1".
+Alternatively, you can set the install program path and
+target directories at the start of the Makefile and perform
+a "make install"; if you wish to install in system directories,
+you'll need to be super-user to run this.
+
+You'll probably want to add appropriate settings of the
+various SPEAKFREE_ environment variables in your login
+profile; see the "LOOK WHO'S LISTENING" section of the
+sfspeaker.1 manual page for details.
+
+If one or more of the modules of Speak Freely fails to build
+properly, double-check your compiler and linker option settings
+in the Makefile.
+
+If you encounter problems or wish to discuss issues relating to
+Speak Freely with other users, you may wish to subscribe to one
+or more of the Speak Freely mailing lists.  For details about
+these lists, please visit the Web page:
+
+    http://www.fourmilab.ch/speakfree/unix/
+
+                                            John Walker
+                                            http://www.fourmilab.ch/
